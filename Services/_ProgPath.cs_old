@@ -1,0 +1,12 @@
+﻿namespace DbAdmin.Services
+{
+    //程式路徑 for title (分群組)
+    public static class _ProgPath
+    {
+        public const string Config = "路徑1,路徑2,系統參數設定";
+        public const string City = "縣市資料維護";
+        public const string User = "員工資料維護";
+        public const string FindUser = "員工資料查詢";
+        
+    }//class
+}

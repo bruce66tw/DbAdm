@@ -1,0 +1,100 @@
+﻿
+/* bootstrap alert */
+#xgAlert {
+    position: fixed; 
+    top: 3px; 
+    right: 3px; 
+    width: auto;
+    z-index: 9999; 
+    border-radius: 5px
+}
+#xgAlert1 {
+    position: fixed; 
+    top: 3px; 
+    right: 3px; 
+    width: auto;
+    z-index: 9999; 
+    border-radius: 5px
+}
+
+
+/* 處理中訊息 */
+.xg-wait22 {
+    display:    none;
+    position:   fixed;
+    z-index:    1000;
+    top:        0;
+    left:       0;
+    height:     100%;
+    width:      100%;
+    background: rgba(2, 18, 23, 0.6)
+                url('/Images/loading2.gif') 
+                50% 50% 
+                no-repeat;
+}
+
+#xgWait {
+    display: none;  
+    position: fixed;
+    top: 33%;
+    left: 50%;
+}
+
+.xg-msg .modal-dialog {
+    min-width: 280px;
+    max-width: 480px;
+}
+.xg-msg .modal-header {
+    /*height: 10px;*/
+    border-bottom: none;
+    padding: 9px 15px 9px 19px;
+    background-color: none;
+}
+/*
+.xg-msg .modal-title {
+    font-size: 16px;
+    color: #3e8cc6;
+}
+*/
+.xg-msg .modal-body {
+    font-size: 16px;
+    padding: 10px 20px 30px 20px;
+}
+.xg-msg .modal-footer {
+    border-bottom: none;
+    padding: 10px;
+}
+
+/*
+#xgArea .modal-dialog {
+    width: 480px;
+}
+*/
+
+/*
+#xgWait2 i {  
+  position: fixed;
+  top: 50%;
+  left: 50%;
+}
+
+#xgWait2:before {
+  content: "\f110";
+  font-family: FontAwesome;
+  font-size: 20px;
+  position: absolute;
+  top: 0; 
+}
+*/
+
+/* When the body has the wait class, we turn
+   the scrollbar off with overflow:hidden */
+body.xg-show-wait {
+    overflow: hidden;   
+}
+
+/* Anytime the body has the wait class, our
+   modal element will be visible */
+body.xg-show-wait .xg-wait {
+    display: block;
+}

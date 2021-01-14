@@ -1,0 +1,79 @@
+using Base.Enums;
+using Base.Models;
+using Base.Services;
+using Newtonsoft.Json.Linq;
+
+namespace {{Project}}.Services
+{
+    public class {{Table}}Edit
+    {
+        private EditDto GetDto()
+        {
+            return new EditDto
+            {
+				{{! with 區塊內容開始位置與with相同, 後面加~減少空白列 }}
+				{{with MainTable ~}}
+				Table = "dbo.[{{Table}}]",
+                PkeyFid = "{{PkeyFid}}",
+			{{#unless HasCol4}}
+                Col4 = null,
+			{{/unless}}
+                Items = new [] 
+				{
+				{{#Eitems}}
+					{{ServiceStr}}
+				{{/Eitems}}
+                },
+				{{/with}}
+			{{#if ChildTables}}
+                Childs = new EditDto[]
+                {
+				{{#ChildTables}}
+                    new EditDto
+                    {
+                        Table = "dbo.[{{Table}}]",
+                        PkeyFid = "{{PkeyFid}}",
+                        FkeyFid = "{{FkeyFid}}",
+					{{#if OrderBy}}
+						OrderBy = "{{OrderBy}}",
+					{{/if}}
+					{{#unless HasCol4}}
+                        Col4 = null,
+					{{/unless}}
+                        Items = new [] 
+						{
+						{{#Eitems}}
+						{{#if ServiceStr}}
+							{{ServiceStr}}
+						{{/if}}
+						{{/Eitems}}
+                        },
+                    },
+				{{/ChildTables}}
+                },
+			{{/if}}
+            };
+        }
+
+        private CrudEdit Service()
+        {
+            return new CrudEdit(GetDto());
+        }
+
+        public JObject GetJson(string key)
+        {
+            return Service().GetJson(key);
+        }
+
+        public ResultDto Save(JObject json)
+        {
+            return Service().Save(json);
+        }
+
+        public ResultDto Delete(string key)
+        {
+            return Service().Delete(key);
+        }
+
+    } //class
+}

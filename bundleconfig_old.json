@@ -1,0 +1,81 @@
+[
+  {
+    "outputFileName": "wwwroot/css/lib.css",
+    "inputFiles": [
+      "_source/css/bootstrap-4.4.1.min.css",
+      "_source/css/dataTables.bootstrap4-1.10.19.min.css",
+      "_source/css/bootstrap-datepicker-1.9.min.css"
+    ]
+  },
+
+  {
+    "outputFileName": "wwwroot/css/site.css",
+    "inputFiles": [
+      /* bundler will change fonts path in css file, must pust fonts under css folder !!*/
+      "wwwroot/css/icomoon.css",
+      "_source/css/baseNoLine/*.css",
+      "_source/css/view/_xp.css"
+    ]
+  },
+
+  {
+    "outputFileName": "wwwroot/js/lib.js",
+    "inputFiles": [
+      "_source/js/jquery-3.4.1.min.js",
+      "_source/js/bootstrap.bundle-4.4.1.min.js",
+      /*使用jquery.dataTables, dataTables.bootstrap4*/
+      "_source/js/jquery.dataTables-1.10.19.min.js",
+      "_source/js/dataTables.bootstrap4-1.10.19.min.js",
+      /*pjax必須remark 716,716行*/
+      "_source/js/jquery.pjax-2.0.1.js",
+      "_source/js/jquery.validate-1.19.1.min.js",
+      "_source/js/jquery.validate.unobtrusive-3.2.11.min.js",
+      "_source/js/bootstrap-datepicker-1.9.min.js",
+      "_source/js/modernizr-2.8.3.min.js",
+      "_source/js/moment-2.24.min.js",
+      "_source/js/mustache-3.1.min.js"
+    ]
+    /*
+    "minify": {
+      "enabled": true,
+      "renameLocals": false
+    },
+    "sourceMap": false
+    */
+  },
+
+  {
+    "outputFileName": "wwwroot/js/site.js",
+    "inputFiles": [
+      "_source/js/base/*.js",
+      "wwwroot/js/view/_*.js"
+    ]
+    /*
+    "minify": {
+      "enabled": true,
+      "renameLocals": false
+    },
+    "sourceMap": false
+    */
+  },
+
+  /* locale */
+    {
+      "outputFileName": "wwwroot/js/zh-TW.js",
+      "inputFiles": [
+        "wwwroot/locale/zh-TW/*.js"
+      ]
+    },
+    {
+      "outputFileName": "wwwroot/js/zh-CN.js",
+      "inputFiles": [
+        "wwwroot/locale/zh-CN/*.js"
+      ]
+    },
+    {
+      "outputFileName": "wwwroot/js/en-US.js",
+      "inputFiles": [
+        "wwwroot/locale/en-US/*.js"
+      ]
+    }
+]

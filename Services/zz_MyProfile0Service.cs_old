@@ -1,0 +1,19 @@
+﻿using Base.Models;
+using Base.Services;
+
+namespace DbAdmin.Services
+{
+    //底層 Db.cs 會呼叫這個class
+    public class MyProfile0Service : UserProfile0Service
+    {
+        public override UserProfile0Model GetData()
+        {
+            var profile = new UserProfile0Model();
+            profile.UserId = _Session.UserId;
+            profile.Locale = _Session.Locale;
+            //session.Locale0 = _Session.Locale0;
+            return profile;
+        }
+
+    }//class
+}

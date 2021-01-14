@@ -1,0 +1,123 @@
+﻿using BaseWeb.Models;
+using DbAdmin.Models;
+using System.Collections.Generic;
+using System.Web;
+
+namespace DbAdmin.Services
+{
+    //繼承 _Base.Session0
+    public static class _Session
+    {
+        //不能這樣用 !!
+        //private static HttpSessionState _sess = HttpContext.Current.Session;  
+
+        //必要欄位constant
+        const string _UserId = "UserId";
+        const string _Locale = "Locale";        //語系code
+
+        //擴充欄位constant
+        const string _IsLogin = "IsLogin";
+        const string _UserName = "UserName";
+        //const string _Menus = "Menus";
+
+        /*
+        const string _RoleId = "RoleId";
+        const string _RoleName = "RoleName";
+        const string _DeptId = "DeptId";
+        const string _DeptName = "DeptName";
+        */
+
+        //=== static method start ===
+        /*
+        public static SessionModel GetSession()
+        {
+            return HttpContext.Current.Session as SessionModel;
+        }
+        */
+
+        //write session into server
+        public static void Write(SessionModel my)
+        {
+            var sess = HttpContext.Current.Session;
+            sess.RemoveAll();
+
+            sess[_UserId] = my.UserId;
+            sess[_Locale] = my.Locale;
+
+            sess[_IsLogin] = my.IsLogin;
+            sess[_UserName] = my.UserName;
+            //sess[_Menus] = my.Menus;
+            /*
+            sess[_RoleId] = my.RoleId;
+            sess[_RoleName] = my.RoleName;
+            sess[_DeptId] = my.DeptId;
+            */
+        }
+
+        public static void Reset()
+        {
+            HttpContext.Current.Session.RemoveAll();
+        }
+        
+        /* ??
+        public static object Get(string key)
+        {
+            return HttpContext.Current.Session[key];
+        }
+        public static void Set(string key, object value)
+        {
+            HttpContext.Current.Session[key] = value;            
+        }
+        */
+        //=== static method end ===
+
+
+        //=== 以下為存取session欄位, 必須使用 get/set!! ===
+        public static string UserId
+        {
+            get { return (string)HttpContext.Current.Session[_UserId]; }
+            set { HttpContext.Current.Session[_UserId] = value; }
+        }
+        public static string Locale
+        {
+            get { return (string)HttpContext.Current.Session[_Locale]; }
+            set { HttpContext.Current.Session[_Locale] = value; }
+        }
+
+        public static bool IsLogin
+        {
+            get
+            {
+                var data = HttpContext.Current.Session[_IsLogin];
+                return data == null ? false : (bool)data;
+            }
+            set { HttpContext.Current.Session[_IsLogin] = value; }
+        }
+        public static string UserName
+        {
+            get { return (string)HttpContext.Current.Session[_UserName]; }
+            set { HttpContext.Current.Session[_UserName] = value; }
+        }
+        /*
+        public static List<MenuModel> Menus
+        {
+            get { return (List<MenuModel>)HttpContext.Current.Session[_Menus]; }
+            set { HttpContext.Current.Session[_Menus] = value; }
+        }
+        */
+
+        /*
+        public static string RoleId
+        {
+            get { return (string)HttpContext.Current.Session[_RoleId]; }
+            set { HttpContext.Current.Session[_RoleId] = value; }
+        }
+        public static string RoleName
+        {
+            get { return (string)HttpContext.Current.Session[_RoleName]; }
+            set { HttpContext.Current.Session[_RoleName] = value; }
+        }
+        */
+
+    }//class
+}

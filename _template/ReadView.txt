@@ -1,0 +1,79 @@
+{{#if HasFitemCols}}
+@{ 
+{{#if LabelHori}}
+	var cols = _Fun.DefHCols;
+{{else}}
+	var cols = _Fun.DefVCols;
+{{/if}}    
+}
+{{/if}}
+
+<script src="~/js/view/{{Table}}.js"></script>
+<script type="text/javascript">
+    $(function () {
+        _me.init();
+    });
+</script>
+
+@await Component.InvokeAsync("XgProgPath", new { names = new string[] { "{{FunName}}" } })
+<div class="xp-prog">
+    <div id="divRead" class="xg-swap xg-active">
+	{{#if HasFindForm}}
+		<form id='formFind' class='xg-form' style="margin-bottom:0;">
+	{{#Fitems}}
+		{{#if IsGroupStart}}
+			<div class="row">
+		{{/if}}
+		{{#if IsGroup}}
+				{{RvStr}}
+		{{else}}
+			{{RvStr}}
+		{{/if}}
+		{{#if IsGroupEnd}}
+			</div>
+		{{/if}}
+	{{/Fitems}}
+        </form>
+	{{/if}}
+	{{#if HasFind2Form}}
+        <form id='formFind2' class='xg-form'>
+	{{#F2items}}
+		{{#if IsGroupStart}}
+			<div class="row">
+		{{/if}}
+		{{#if IsGroup}}
+				{{RvStr}}
+		{{else}}
+			{{RvStr}}
+		{{/if}}
+		{{#if IsGroupEnd}}
+			</div>
+		{{/if}}
+	{{/F2items}}
+        </form>
+	{{/if}}
+
+		<div class='xg-btns-box'>
+		{{#if HasCreate}}
+            @Html.XgCreate()
+		{{/if}}
+		{{#if CanExport}}
+            @Html.XgExport()
+		{{/if}}
+        </div>
+        <table id="table1" class="table table-bordered xg-table" cellspacing="0">
+            <thead>
+                <tr>
+				{{#Ritems}}
+					{{ViewStr}}
+				{{/Ritems}}
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div id="divEdit" class="xg-swap">
+        <partial name="Edit" />
+    </div>
+</div>

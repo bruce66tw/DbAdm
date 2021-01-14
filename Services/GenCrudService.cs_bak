@@ -1,0 +1,456 @@
+﻿using Base.Enums;
+using Base.Services;
+using HandlebarsDotNet;
+using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Web;
+
+namespace DbAdmin.Services
+{
+    //generate CRUD, use Handlebars.net
+    public class GenCrudService
+    {
+        //constant
+        const string CrudTable = "[table]";     //key word in file name
+        const string CrudTplTail = "[n]";       //for 單筆or多筆維護
+        const string TplSpace = "BpmsAdmin";    //template project namespace
+        const string Sep = ", ";    //item column seperator
+
+        private JArray _cruds = null;
+        private JArray _crudQitems = null;
+        private JArray _crudRitems = null;
+        private JArray _crudEtables = null;
+        private JArray _crudEitems = null;
+
+        //template folder
+        private string _tplDir = _Fun.DirRoot + "_template/";
+        //generated 6 files, 1(template),2(target folder),3(target file)
+        //[n]: [1]:single, [2]:multiple
+        private string[] _crudFiles = new string[] {
+            "Controller.txt", "Controllers", "[table]Controller.cs",
+            "ServiceRead.txt", "Services", "[table]Read.cs",
+            "ServiceEdit.txt", "Services", "[table]Edit.cs",
+            "ViewRead.txt", "Views/[table]", "Read.cshtml",
+            "ViewEdit.txt", "Views/[table]", "Edit.cshtml",
+            "JS.txt", "Scripts/view", "[table].js",
+        };
+        private int _crudFileLen;
+
+        //private List<string> _crudText1s = new List<string>();    //crud1 files text
+        //private List<string> _crudText2s = new List<string>();    //crud2 files text
+
+        //constructor
+        public GenCrudService()
+        {
+            _crudFileLen = _crudFiles.Length;
+        }
+
+        public bool Run(string crudIdList2)
+        {
+            //是否為英數字(和逗號)
+            if (!_Str.IsAlphaNum(crudIdList2, "GenCrudService Run()"))
+            {
+                _Log.Error("GenCrudService.cs Run() only accept alphabet and numeric: (" + crudIdList2 + ")");
+                return false;
+            }
+
+            var crudIds = crudIdList2.Split(',');
+            var crudIdList = _Str.ListAddQuote(crudIdList2);
+
+            //1.get _cruds(Crud rows)
+            var db = new Db();
+            var sql = string.Format(@"
+select a.*, 
+    Project=p.Name, p.ProjectPath, 
+    [Table]=t.Name
+from dbo.Crud a
+join dbo.Project p on a.ProjectId=p.Id
+join dbo.[Table] t on a.TableId=t.Id
+where a.Id in ({0})
+", crudIdList);
+            _cruds = db.GetJsons(sql);
+
+            //1a.get _crudQitems(CrudQitem rows)
+            sql = string.Format(@"
+select a.*,
+    [Column]=c.Name
+from dbo.CrudQitem a
+join dbo.[Column] c on a.ColumnId=c.Id
+where a.CrudId in ({0})
+order by a.CrudId, a.Sort
+", crudIdList);
+            _crudQitems = db.GetJsons(sql);
+
+            //2.get _crudRitems(CrudRitem rows)
+            sql = string.Format(@"
+select a.*
+from dbo.CrudRitem a
+where a.CrudId in ({0})
+order by a.CrudId, a.Sort
+", crudIdList);
+            _crudRitems = db.GetJsons(sql);
+
+            //3.get _crudEtable(CrudEtable rows)
+            sql = string.Format(@"
+select a.*,
+    [Table]=t.Name
+from dbo.CrudEtable a
+join dbo.[Table] t on a.TableId=t.Id
+where a.CrudId in ({0})
+", crudIdList);
+            _crudEtables = db.GetJsons(sql);
+
+            //4.get _crudEitem(CrudEitem rows)
+            sql = string.Format(@"
+select t.CrudId, a.*,
+    [Column]=c.Name, c.Cname, c.DataType
+from dbo.CrudEitem a
+join dbo.CrudEtable t on a.EtableId=t.Id
+join dbo.[Column] c on a.ColumnId=c.Id
+where t.CrudId in ({0})
+", crudIdList);
+            _crudEitems = db.GetJsons(sql);
+            db.Dispose();
+
+            //loop產生檔案
+            foreach (var crudId in crudIds)
+            {
+                if (!GenByCrudId(crudId))
+                    return false;
+            }
+
+            //case of ok
+            return true;
+        }
+
+        //產生一個table的crud檔案s
+        private bool GenByCrudId(string crudId)
+        {
+            #region check & set variables
+            //check
+            var error = "";
+            var crud = _Json.FindArray1(_cruds, "Id", crudId);
+            if (crud == null)
+            {
+                error = "no tableId: " + crudId;
+                goto lab_error;
+            }
+
+            //get crud & crudId
+            //var crudId = crud["Id"].ToString();
+
+            //get crudRitems
+            const string CrudId = "CrudId";
+            var crudQitems = _Json.FindArray(_crudQitems, CrudId, crudId);
+            var crudRitems = _Json.FindArray(_crudRitems, CrudId, crudId);
+
+            //get crudEtables
+            var crudEtables = _Json.FindArray(_crudEtables, CrudId, crudId);
+
+            //get crudEitems
+            var crudEitems = _Json.FindArray(_crudEitems, CrudId, crudId);
+            #endregion
+
+            #region 調整變數內容
+            #endregion
+
+            //get json data for mustache
+            /*
+            var json = new JObject()
+            {
+                ["Project"] = "",
+                ["Table"] = "",
+                ["Crud"] = crud,
+                ["CrudRitems"] = crudRitems,
+                ["CrudEtables"] = crudEtables,
+                ["CrudEitems"] = crudEitems,
+            };
+            */
+
+            #region set crud["Qitems"](查詢條件欄位)
+            var qitems = _Json.FindArray(crudQitems, "CrudId", crudId);
+            var hasQitem = (qitems != null && qitems.Count > 0);
+            if (hasQitem)
+            {
+                var qitems2 = new JArray();
+                var tpl = "new RitemDto { Fid = \"{0}\", Op = EnumItemOp.Like },";
+                foreach (JObject qitem in qitems)
+                {
+                    qitems2.Add(new JObject() {
+                        ["ItemStr"] = string.Format(tpl, qitem["Column"].ToString()),
+                    });
+                }
+                crud["Qitems"] = qitems2;
+            }
+            #endregion
+
+            #region set crud["Ritems"], crud["RitemJss"]
+            //set ritems(查詢結果欄位)
+            int i;
+            var ritems = _Json.FindArray(crudRitems, "CrudId", crudId);
+            var hasRitem = (ritems != null && ritems.Count > 0);
+            if (hasRitem)
+            {
+                //陣列長度不同, 所以分成2個陣列
+                var ritems2 = new JArray(); //全部欄位
+                var jsStrs = new JArray();  //部分欄位
+                //var tpl = "new RitemDto { Fid = \"{0}\", Op = EnumItemOp.Like },";
+                for (i = 0; i < ritems.Count; i++)
+                {
+                    var ritem = ritems[i] as JObject;
+                    var jsStr = GetRitemJsStr(ritem, i);
+                    ritems2.Add(new JObject()
+                    {
+                        ["ColumnName"] = ritem["ColumnName"].ToString(),
+                        //["Cname"] = ritem["Cname"].ToString(),
+                        ["ViewStr"] = GetRitemViewStr(ritem),
+                    });
+                    if (jsStr != "")
+                        jsStrs.Add(new JObject()
+                        {
+                            ["Str"] = jsStr,
+                        });
+                }
+                crud["Ritems"] = ritems2;
+                crud["RitemJss"] = jsStrs;
+            }
+            #endregion
+
+            #region set crud["MasterTable"], crud["ChildTables"]
+            //set Eitems.ItemStr
+            //var sep = ", \t";
+            for (i = 0; i < crudEitems.Count; i++)
+            {
+                var eitem = crudEitems[i] as JObject;
+                eitem["ItemStr"] = GetEitemServiceStr(eitem);
+            }
+
+            //set etable["Eitems"]
+            var etableLen = crudEtables.Count;
+            for (i = 0; i < etableLen; i++)
+            {
+                var etable = crudEtables[i];
+                var eitems = _Json.FindArray(crudEitems, "EtableId", etable["Id"].ToString());
+                etable["Eitems"] = eitems;
+                foreach (JObject item in eitems)
+                    item["ViewStr"] = GetEitemViewStr(item);
+            }
+
+            crud["MasterTable"] = crudEtables[0];
+
+            var childTables = new JArray();
+            for (i = 1; i < crudEtables.Count; i++)
+            {
+                childTables.Add(crudEtables[i]);
+            }
+            crud["ChildTables"] = childTables;
+            //crud["Etables"] = crudEtables;
+            //crud["Eitems"] = crudEitems;
+            #endregion
+
+            #region generate crud files
+            var multiEdit = (crudEtables.Count > 1);
+            var tplTail = multiEdit ? "2" : "1";
+            var projectPath = _Str.AddAntiSlash(crud["ProjectPath"].ToString());
+            for (i = 0; i < _crudFileLen; i = i + 3)
+            {
+                //read template file to string
+                var tplFile = _tplDir + _crudFiles[i].Replace(CrudTplTail, tplTail);
+                var tplStr = _File.ToStr(tplFile);
+                if (tplStr == null)
+                {
+                    _Log.Error("no template file: " + tplFile + "," + "??");
+                    goto lab_error;
+                }
+
+                //mustache replace
+                var mustache = Handlebars.Compile(tplStr);
+                var result = HttpUtility.HtmlDecode(mustache(crud));
+
+                //if file existed, return false
+                var tableName = crud["Table"].ToString();
+                var toDir = projectPath + _Str.AddAntiSlash(_crudFiles[i + 1]).Replace(CrudTable, tableName);
+                var toFile = toDir + _crudFiles[i + 2].Replace(CrudTable, tableName);
+                //var toFile = _File.GetNextFileName(toDir + _crudFiles[i + 2].Replace(CrudTable, tableName), true);
+                if (File.Exists(toFile))
+                    File.Copy(toFile, _File.GetNextFileName(toFile, true));
+
+                //create folder
+                _File.MakeDir(toDir);
+
+                //save file
+                _File.StrToFile(result, toFile);
+            }//for
+            #endregion
+
+            //case of ok
+            return true;
+
+        lab_error:
+            _Log.Error("GenCrudService.cs GenByTable() error: " + error);
+            return false;
+        }
+
+        /// <summary>
+        /// get ritem str for js
+        /// </summary>
+        /// <returns></returns>
+        private string GetRitemJsStr(JObject item, int i)
+        {
+            var str = "";
+            switch (item["RitemType"].ToString())
+            {
+                case "C":   //crud fun
+                            //大括號前面要再加上{ for escape
+                    var ext = item["ExtInfo"].ToString();
+                    str = string.Format(@"{{ targets: [{0}], render: function (data, type, full, meta) {{
+                    return _crud.dtCrudFun(full.Id, full.Name, {1}, {2}, {3});
+                }}}},", i, SubToBool(ext, 0), SubToBool(ext, 1), SubToBool(ext, 2));
+                    //", i, SubToBool(ext, 0), SubToBool(ext, 1), SubToBool(ext, 2));
+                    break;
+                case "S":   //set status
+                    str = string.Format(@"{{ targets: [{0}], render: function (data, type, full, meta) {{
+                    return _crud.dtSetStatus(full.Id, data);
+                }}}},", i);
+                    break;
+                case "U":   //user define
+                    str = string.Format(@"{{ targets: [{0}], render: function (data, type, full, meta) {{
+                    //todo
+                    return '';
+                }}}},", i);
+                    break;
+                    //default:
+                    //    continue;
+            }
+
+            return str;
+        }
+
+        /// <summary>
+        /// get ritem str for view
+        /// </summary>
+        /// <returns></returns>
+        private string GetRitemViewStr(JObject item)
+        {
+            return "<th" + ((string)item["Width"] == "0" ? ">" : " width='" + (string)item["Width"] + "px'>") +
+                (string)item["Cname"] + 
+                "</th>";
+        }
+
+        /*
+        */
+        private string GetEitemServiceStr(JObject item)
+        {
+            return "new EitemDto { Fid = \"" + item["Column"].ToString() + "\"" +
+                GetFidStr(item, "Required", (string)item["Required"] == "1" ? "true" : "") +
+                GetFidStr(item, "Create", (string)item["HasCreate"] == "0" ? "false" : "") +
+                GetFidStr(item, "Update", (string)item["HasUpdate"] == "0" ? "false" : "") +
+                GetFidStr(item, "CheckType", GetCheckTypeName((string)item["CheckType"])) +
+                GetFidStr(item, "CheckData", (string)item["CheckData"], true) +
+                " },";
+        }
+
+        private string GetEitemViewStr(JObject item)
+        {
+            var str = "";
+            switch (item["InputType"].ToString())
+            {
+                case "C":   //checkbox
+                    //@Html.XiCheck("資料狀態", "Status", true, "1", "啟用", shortCols)
+                    return "@Html.XiCheck(\"" + (string)item["Cname"] + "\"" +
+                        GetValueStr(item["Column"], true) +
+                        ", false, 1" +
+                        GetValueStr(item["InputData"], true) +
+                        ")";
+                /*
+                case "D":   //date
+                    break;
+                case "DT":   //datetime
+                    break;
+                */
+                case "H":   //hide
+                    //@Html.XiHide("Id")
+                    return "@Html.XiHide(\"" + (string)item["Column"] + "\"" +
+                        ")";
+                //case "N":   //numeric
+                //    break;
+                //case "R":   //radio
+                //    break;
+                case "S":   //select
+                    //break;
+                case "T":   //text
+                    //@Html.XiText("專案", "Name", "", 30, true, shortCols)
+                    return "@Html.XiText(\"" + (string)item["Cname"] + "\"" +
+                        GetValueStr(item["Column"], true) +
+                        ", \"\"" +
+                        GetValueStr(GetLen((string)item["DataType"])) +
+                        GetValueStr((string)item["Required"] == "1" ? "true" : "false") +
+                        ")";
+                default:
+                    str = "??";
+                    break;
+            }
+            return str;
+        }
+
+        private int GetLen(string dataType)
+        {
+            var num = _Str.GetMid(dataType, "(", ")");
+            return (num.Length == 0) ? 10 : Convert.ToInt32(num);
+        }
+
+        private string GetFidStr(JObject item, string fid, string value, bool quote = false)
+        {
+            if (string.IsNullOrEmpty(value))
+                return "";
+            if (quote)
+                value = "\"" + value + "\"";
+            return Sep + fid + " = " + value;
+        }
+
+        private string GetValueStr(object val0, bool quote = false)
+        {
+            if (_Str.IsEmpty(val0))
+                return "";
+            var value = val0.ToString();
+            if (quote)
+                value = "\"" + value + "\"";
+            return Sep + value;
+        }
+
+        private string GetCheckTypeName(string type)
+        {
+            switch (type)
+            {
+                case CheckTypeEstr.Email:
+                    return "CheckTypeEstr.Email";
+                case CheckTypeEstr.Url:
+                    return "CheckTypeEstr.Url";
+                case CheckTypeEstr.Min:
+                    return "CheckTypeEstr.Min";
+                case CheckTypeEstr.Max:
+                    return "CheckTypeEstr.Max";
+                case CheckTypeEstr.Range:
+                    return "CheckTypeEstr.Range";
+                default:
+                    return "";
+            }
+        }
+
+        /// <summary>
+        /// substring to boolean
+        /// </summary>
+        /// <param name="str"></param>
+        /// <param name="pos"></param>
+        /// <returns></returns>
+        private string SubToBool(string str, int pos)
+        {
+            return (_Str.IsEmpty(str)) ? "false" :
+                (str.Length <= pos) ? "false" :
+                (str.Substring(pos, 1) == "1") ? "true" :
+                "false";
+        }
+    }//class
+}

@@ -1,0 +1,27 @@
+﻿@*using Resources*@
+@{
+    //var cols = new int[] { 12, 2, 3 };
+}
+
+<form id='formEdit' class='xg-form'>
+    @await Component.InvokeAsync("XiHide", new { fid = "Id" })
+    @await Component.InvokeAsync("XiRead", new { title = "專案", fid = "ProjectName" })
+    @await Component.InvokeAsync("XiRead", new { title = "資料表", fid = "TableName" })
+    @await Component.InvokeAsync("XiRead", new { title = "欄位名稱", fid = "Name" })
+    @await Component.InvokeAsync("XiText", new { title = "欄位中文名", fid = "Cname", maxLen = 30, required = true })
+    @await Component.InvokeAsync("XiRead", new { title = "資料型態", fid = "DataType" })
+    @await Component.InvokeAsync("XiCheck", new { title = "資料狀態", fid = "Status", isCheck = true, value = "1", label = "啟用" })
+    @await Component.InvokeAsync("XiText", new { title = "說明", fid = "Note", maxLen = 30, required = true })
+
+    @*
+        @Html.XiHide("Id")
+        @Html.XiRead("專案 :", "ProjectName")
+        @Html.XiRead("資料表 :", "TableName")
+        @Html.XiRead("欄位名稱 :", "Name")
+        @Html.XiText("欄位中文名 :", "Cname", "", 30, true)
+        @Html.XiRead("資料型態 :", "DataType")
+        @Html.XiCheck("資料狀態 :", "Status", true, "1", "啟用")
+        @Html.XiText("說明 :", "Note")
+    *@
+</form>
+@await Component.InvokeAsync("XgSaveBack")
