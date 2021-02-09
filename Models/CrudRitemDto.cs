@@ -6,10 +6,10 @@
         //base
         public string CrudId { get; set; }
         //public string Column { get; set; }
-        public string ColumnName { get; set; }
+        public string ColumnCode { get; set; }
         public string RitemType { get; set; }
         public string ExtInfo { get; set; }
-        public string Cname { get; set; }
+        public string Name { get; set; }
         public int Width { get; set; }
 
         //extend

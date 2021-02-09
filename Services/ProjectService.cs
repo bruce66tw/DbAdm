@@ -48,26 +48,26 @@ truncate table dbo.tmpColumn;
 */
             db.Update(@"
 CREATE TABLE #tmpTable(
-    Name varchar(30) NOT NULL primary key,
+    Code varchar(30) NOT NULL primary key,
     Note varchar(255) NULL
 );
 CREATE TABLE #tmpColumn(
-	Name varchar(30) NOT NULL,
-	TableName varchar(30) NULL,
+	Code varchar(30) NOT NULL,
+	TableCode varchar(30) NULL,
 	DataType varchar(20) NOT NULL,
 	Nullable bit NOT NULL,
 	DefaultValue varchar(30) NULL,
 	Sort smallint NOT NULL,
 	Note nvarchar(100) NULL
 );
-CREATE NONCLUSTERED	INDEX ix_tmpColumn ON #tmpColumn (Name);");
+CREATE NONCLUSTERED	INDEX ix_tmpColumn ON #tmpColumn (Code);");
 
             //(bulk copy)src tables -> tmpTable
             //欄位順序必須與Db相同
             var dbName = project["DbName"].ToString();
             var reader = dbSrc.GetReader(string.Format(@"
 select 
-    Name=t.table_name,
+    Code=t.table_name,
 	Note=CASE WHEN p.value IS NULL THEN '' ELSE cast(p.value as varchar) end
 from Information_Schema.Tables t
 LEFT JOIN sys.extended_properties p ON p.major_id = object_id(t.table_schema + '.' + t.table_name) 
@@ -103,8 +103,8 @@ ORDER BY t.table_name
             //(bulk copy)src columns -> tmpColumn
             reader = dbSrc.GetReader(string.Format(@"
 SELECT 
-    Name=column_name, 
-	TableName=table_name, 
+    Code=column_name, 
+	TableCode=table_name, 
 	DataType=data_type + (case when character_maximum_length is null then '' else '('+CONVERT(VARCHAR, character_maximum_length)+')' end),
     Nullable=case when is_nullable = 'YES' then 1 else 0 end,
 	DefaultValue=case when i.COLUMN_DEFAULT is null then '' else replace(replace(i.COLUMN_DEFAULT,'(',''),')','') end,
@@ -143,10 +143,10 @@ ORDER BY table_name, ORDINAL_POSITION
             //=== table start ===
             //get rows for insert new 
             var tables = db.GetJsons(string.Format(@"
-select Name, Note
+select Code, Note
 from #tmpTable
-where Name not in (
-    select Name 
+where Code not in (
+    select Code 
     from dbo.[Table]
     where ProjectId='{0}'
 )
@@ -158,18 +158,18 @@ where Name not in (
                 foreach (JObject table in tables)
                 {
                     db.Update(string.Format(@"
-insert into dbo.[Table](Id, ProjectId, Name, Cname, Note, Status)
+insert into dbo.[Table](Id, ProjectId, Code, Name, Note, Status)
 values('{0}', '{1}', '{2}', '', '{3}', 1)
-", _Str.NewId(), projectId, table["Name"].ToString(), table["Note"].ToString()));
+", _Str.NewId(), projectId, table["Code"].ToString(), table["Note"].ToString()));
                 }
             }
 
             //update table.status(0/1)
             db.Update(string.Format(@"
 update a set 
-    Status=case when t.Name is null then 0 else 1 end
+    Status=case when t.Code is null then 0 else 1 end
 from dbo.[Table] a
-left outer join #tmpTable t on t.Name=a.Name
+left outer join #tmpTable t on t.Code=a.Code
 where a.ProjectId='{0}'
 ", projectId));
 
@@ -178,12 +178,12 @@ where a.ProjectId='{0}'
             //get rows for insert new 
             var cols = db.GetJsons(string.Format(@"
 select
-    a.Name, t.Id as TableId, a.Note,
-    a.Nullable
-from #tmpColumn a
-inner join dbo.[Table] t on t.Name=a.TableName and t.ProjectId='{0}' 
-where t.Id+a.Name not in (
-    select t.Id+c.Name 
+    c.Code, t.Id as TableId, c.Note,
+    c.Nullable
+from #tmpColumn c
+inner join dbo.[Table] t on t.Code=c.TableCode and t.ProjectId='{0}' 
+where t.Id+c.Code not in (
+    select t.Id+c.Code 
     from dbo.[Column] c
     inner join dbo.[Table] t on t.Id=c.TableId
     where t.ProjectId='{0}'
@@ -198,8 +198,8 @@ where t.Id+a.Name not in (
                     //在這裡只寫入部分欄位, 後面會再update一次
                     db.Update(string.Format(@"
 insert into dbo.[Column](
-    Id, TableId, Name, 
-    Cname, DataType, Nullable,
+    Id, TableId, Code, 
+    Name, DataType, Nullable,
     DefaultValue, Sort, Note, 
     Status)
 values(
@@ -208,7 +208,7 @@ values(
     '', 0, '{4}',
     1)
 ",
-_Str.NewId(), col["TableId"].ToString(), col["Name"].ToString(), 
+_Str.NewId(), col["TableId"].ToString(), col["Code"].ToString(), 
 Convert.ToByte(col["Nullable"]),
 col["Note"].ToString()
 ));
@@ -222,8 +222,8 @@ update c
 from dbo.[Column] c
 inner join dbo.[Table] t on t.Id=c.TableId
 where t.projectId='{0}'
-and t.Name+c.Name not in (
-    select TableName+Name from #tmpColumn
+and t.Code+c.Code not in (
+    select TableCode+Code from #tmpColumn
 )
 ", projectId));
 
@@ -237,7 +237,7 @@ update c set
     Note=case when (c.Note is null or c.Note = '') then tc.Note else c.Note end
 from dbo.[Column] c
 inner join dbo.[Table] t on t.Id=c.TableId
-inner join #tmpColumn tc on t.Name=tc.TableName and c.Name=tc.Name
+inner join #tmpColumn tc on t.Code=tc.TableCode and c.Code=tc.Code
 where t.projectId='{0}'
 ", projectId));
 

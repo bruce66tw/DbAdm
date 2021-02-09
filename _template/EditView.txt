@@ -2,7 +2,7 @@
     var cols = _Fun.DefHCols;
 }
 
-<form id='formEdit' class='xg-form'>
+<form id='eform' class='xg-form'>
 {{#each MainTable.HideViewStrs}}
 	{{this}}
 {{/each}}
@@ -25,10 +25,10 @@
 
 {{#ChildTables}}
 <div class='xg-btns-box'>
-	<span class="xg-block-label">{{TableCname}}</span>
-	@await Component.InvokeAsync("XgAddRow", "_me.m{{Table}}.onAddRow()")
+	<span class="xg-block-label">{{TableName}}</span>
+	@await Component.InvokeAsync("XgAddRow", "_me.m{{TableCode}}.onAddRow()")
 </div>
-<form id='formEdit{{Table}}' class='xg-form' style="border:none">
+<form id='eform{{TableCode}}' class='xg-form' style="border:none;{{#if HalfWidth}} width:50%;{{/if}}">
     <table class="table table-bordered xg-table xg-no-hline" cellspacing="0">
         <thead>
             <tr>
@@ -39,7 +39,7 @@
 			{{/Eitems}}
             </tr>
         </thead>
-        <tbody id="tbody{{Table}}"></tbody>
+        <tbody id="tbody{{TableCode}}"></tbody>
     </table>
 </form>
 
@@ -47,7 +47,7 @@
 @await Component.InvokeAsync("XgSaveBack")
 
 {{#ChildTables}}
-<script id="tpl{{Table}}" type="text/template">
+<script id="tpl{{TableCode}}" type="text/template">
     <tr>
 	{{#each HideViewStrs}}
 		{{this}}

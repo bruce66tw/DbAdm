@@ -16,8 +16,8 @@ namespace DbAdm.Services
                 Items = new[] {
                     new EitemDto { Fid = "Id" },
                     new EitemDto { Fid = "ProjectId" },
+                    new EitemDto { Fid = "Code" },
                     new EitemDto { Fid = "Name" },
-                    new EitemDto { Fid = "Cname" },
                     new EitemDto { Fid = "Note" },
                     new EitemDto { Fid = "Status" },
                 },
@@ -33,8 +33,8 @@ namespace DbAdm.Services
                         Items = new [] {
                             new EitemDto { Fid = "Id" },
                             new EitemDto { Fid = "TableId" },
+                            new EitemDto { Fid = "Code" },
                             new EitemDto { Fid = "Name" },
-                            new EitemDto { Fid = "Cname" },
                             new EitemDto { Fid = "DataType" },
                             new EitemDto { Fid = "Nullable" },
                             new EitemDto { Fid = "DefaultValue" },
@@ -57,14 +57,14 @@ namespace DbAdm.Services
             return Service().GetJson(key);
         }
 
-        public ResultDto SaveCreate(JObject json)
+        public ResultDto Create(JObject json)
         {
-            return Service().SaveCreate(json);
+            return Service().Create(json);
         }
 
-        public ResultDto SaveUpdate(string key, JObject json)
+        public ResultDto Update(string key, JObject json)
         {
-            return Service().SaveUpdate(key, json);
+            return Service().Update(key, json);
         }
 
         public ResultDto Delete(string key)

@@ -15,13 +15,13 @@
     <!-- read form-->
     <div id="divRead" class="xg-swap xg-active">
         <!-- condition -->
-        <form id='formFind' class='xg-form'>
+        <form id='rform' class='xg-form'>
             <div class="row">
                 @await Component.InvokeAsync("XiSelect", new { title = "專案", fid = "ProjectId", rows = (List<IdStrDto>)ViewBag.Projects, inRow = true })
                 @await Component.InvokeAsync("XgFindTbar")
             </div>
-            @await Component.InvokeAsync("XiText", new { title = "資料表", fid = "TableName", maxLen = 30 })
-            @await Component.InvokeAsync("XiText", new { title = "欄位名稱", fid = "Name", maxLen = 30 })
+            @await Component.InvokeAsync("XiText", new { title = "資料表", fid = "TableCode", maxLen = 30 })
+            @await Component.InvokeAsync("XiText", new { title = "欄位", fid = "Code", maxLen = 30 })
         </form>
 
         <!-- result list -->
@@ -30,8 +30,8 @@
                 <tr>
                     <th>專案</th>
                     <th>資料表</th>
+                    <th>欄位</th>
                     <th>欄位名稱</th>
-                    <th>欄位中文名</th>
                     <th>資料型態</th>
                     <th width='80px'>維護功能</th>
                     <th width='60px'>資料狀態</th>

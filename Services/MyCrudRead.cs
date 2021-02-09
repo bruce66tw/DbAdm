@@ -12,19 +12,17 @@ namespace DbAdm.Services
         {
             ReadSql = @"
 select 
-    a.Id, a.Status, 
-    t.Name as TableName,
-    p.Name as ProjectName,
-    a.Created
-from dbo.Crud a
-join dbo.Project p on p.Id = a.ProjectId
-join dbo.[Table] t on t.Id = a.TableId
-order by p.Id, a.Id desc
+    c.Id, c.Status, c.ProgCode,
+    p.Code as ProjectCode,
+    c.Created
+from dbo.Crud c
+join dbo.Project p on p.Id=c.ProjectId
+order by p.Id, c.Id desc
 ",
             TableAs = "a",
             Items = new [] {
                 new QitemDto { Fid = "ProjectId" },
-                new QitemDto { Fid = "Name", Col = "t.Name", Op = ItemOpEstr.Like },
+                new QitemDto { Fid = "ProgCode", Op = ItemOpEstr.Like },
                 new QitemDto { Fid = "Status" },
             },
         };

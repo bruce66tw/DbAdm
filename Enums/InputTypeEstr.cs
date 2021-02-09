@@ -19,5 +19,6 @@ namespace DbAdm.Enums
         public const string File = "F";
         public const string Sort = "SO";
         public const string Modal = "MO";
+        public const string Password = "PWD";
     }
 }

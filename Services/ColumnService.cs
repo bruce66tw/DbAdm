@@ -16,7 +16,7 @@ namespace DbAdm.Services
 
             var sql = string.Format(@"
 select 
-    c.Id, c.Name, c.Cname, c.DataType
+    c.Id, c.Code, c.Name, c.DataType
 from dbo.[Column] c
 where c.TableId='{0}'
 and c.Status=1

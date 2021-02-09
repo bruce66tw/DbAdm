@@ -8,18 +8,18 @@
 }
 {{/if}}
 
-<script src="~/js/view/{{Table}}.js"></script>
+<script src="~/js/view/{{ProgCode}}.js"></script>
 <script type="text/javascript">
     $(function () {
         _me.init();
     });
 </script>
 
-@await Component.InvokeAsync("XgProgPath", new { names = new string[] { "{{FunName}}" } })
+@await Component.InvokeAsync("XgProgPath", new { names = new string[] { "{{ProgName}}" } })
 <div class="xp-prog">
     <div id="divRead" class="xg-swap xg-active">
 	{{#if HasFindForm}}
-		<form id='formFind' class='xg-form' style="margin-bottom:0;">
+		<form id='rform' class='xg-form' style="margin-bottom:0;">
 	{{#Fitems}}
 		{{#if IsGroupStart}}
 			<div class="row">
@@ -36,7 +36,7 @@
         </form>
 	{{/if}}
 	{{#if HasFind2Form}}
-        <form id='formFind2' class='xg-form'>
+        <form id='rform2' class='xg-form'>
 	{{#F2items}}
 		{{#if IsGroupStart}}
 			<div class="row">
@@ -55,10 +55,10 @@
 
 		<div class='xg-btns-box'>
 		{{#if HasCreate}}
-            @Html.XgCreate()
+			@await Component.InvokeAsync("XgCreate")
 		{{/if}}
 		{{#if CanExport}}
-            @Html.XgExport()
+			@await Component.InvokeAsync("XgExport")
 		{{/if}}
         </div>
         <table id="table1" class="table table-bordered xg-table" cellspacing="0">

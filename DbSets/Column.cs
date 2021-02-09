@@ -9,8 +9,8 @@ namespace DbAdm.DbSets
     {
         public string Id { get; set; }
         public string TableId { get; set; }
+        public string Code { get; set; }
         public string Name { get; set; }
-        public string Cname { get; set; }
         public string DataType { get; set; }
         public bool Nullable { get; set; }
         public string DefaultValue { get; set; }

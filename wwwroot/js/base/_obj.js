@@ -79,7 +79,7 @@ var _obj = {
      * check object existed or not
      */
     isExist: function (obj) {
-        return (obj.length > 0);
+        return (obj !== undefined && obj !== null && obj.length > 0);
     },
 
     /**

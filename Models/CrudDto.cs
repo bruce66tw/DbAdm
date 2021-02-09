@@ -7,10 +7,10 @@ namespace DbAdm.Models
     {
         //base-crud
         public string Id { get; set; }
-        public string Project { get; set; }
+        public string Project { get; set; }     //project code
         public string ProjectPath { get; set; }
-        public string Table { get; set; }
-        public string FunName { get; set; }
+        public string ProgCode { get; set; }    //program code
+        public string ProgName { get; set; } 
         //base-read
         public string ReadSql { get; set; }
         public string TableAs { get; set; }

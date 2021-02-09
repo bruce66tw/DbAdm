@@ -14,7 +14,7 @@
  *   _childs:
  * called by _crud.js
  * param kid {string} (optional 'Id') key field id
- * param formId {string} (optional 'formEdit')
+ * param formId {string} (optional 'eform')
  * return {EditOne}
  */ 
 function EditOne(kid, formId) {
@@ -24,7 +24,7 @@ function EditOne(kid, formId) {
 
     this.init = function () {
         this.kid = kid || 'Id';
-        this.form = $('#' + (formId || 'formEdit'));     //multiple rows container object
+        this.form = $('#' + (formId || 'eform'));     //multiple rows container object
 
         _edit.setFidTypeVars(this, this.form);
         _edit.setFileVars(this, this.form);

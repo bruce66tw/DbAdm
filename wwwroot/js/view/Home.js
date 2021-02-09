@@ -6,7 +6,7 @@ var _me = {
     init: function () {
 
         //把 html element 對應到 jquery object
-        _me.formEdit = $('#formEdit');
+        _me.eform = $('#eform');
 
         //show msg if any
         var msg = _text.get('Msg');
@@ -16,7 +16,7 @@ var _me = {
 
     onClickLogin: function () {
         //debugger;
-        var fm = _me.formEdit;
+        var fm = _me.eform;
         var userId = _text.get('UserId', fm);
         var pwd = _text.get('Pwd', fm);
         if (userId == '') {

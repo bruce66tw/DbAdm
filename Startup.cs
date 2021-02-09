@@ -25,19 +25,26 @@ namespace DbAdm
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            //use pascal case json
+            //use newtonSoft for json serialize for controller
+            services.AddControllers()
+                .AddNewtonsoftJson(options =>
+                {
+                    //use pascal case json
+                    options.UseMemberCasing();
+                });
+
             services.AddControllersWithViews()
                 .AddJsonOptions(options =>
                 {
+                    //use pascal case json
                     options.JsonSerializerOptions.PropertyNamingPolicy = null;
                 });
 
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
-            //locale info for base component
-            services.AddSingleton<IBaseResourceService, BaseResourceService>();
-            //user info for base component
-            services.AddSingleton<IBaseUserInfoService, BaseUserInfoService>();
+            //locale & user info for base component
+            services.AddSingleton<IBaseResService, BaseResService>();
+            services.AddSingleton<IBaseUserService, BaseUserService>();
 
             //appSettings "FunConfig" section -> _Fun.Config
             var config = new ConfigDto();

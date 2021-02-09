@@ -8,12 +8,13 @@ namespace DbAdm.Models
         //base
         public string Id { get; set; }
         public string CrudId { get; set; }
-        public string Table { get; set; }       //table name
-        public string TableCname { get; set; }  //table cname
+        public string TableCode { get; set; }       //table code
+        public string TableName { get; set; }       //table name
         public string PkeyFid { get; set; }
         public string FkeyFid { get; set; }
         public string OrderBy { get; set; }
         public bool HasCol4 { get; set; }
+        public bool HalfWidth { get; set; }
 
         //extend
         public string SortFid { get; set; }     //sort field id

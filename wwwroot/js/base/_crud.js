@@ -75,11 +75,11 @@
     dtCrudFun: function (key, rowName, hasUpdate, hasDelete, hasView) {
         var funs = '';
         if (hasUpdate)
-            funs += _str.format('<a onclick="_crud.onUpdate(\'{0}\');"><i class="icon-pen" title="{1}"></i></a>', key, _BR.TipUpdate);
+            funs += _str.format('<button type="button" class="btn btn-link" onclick="_crud.onUpdate(\'{0}\')"><i class="ico-pen" title="{1}"></i></button>', key, _BR.TipUpdate);
         if (hasDelete)
-            funs += _str.format('<a onclick="_crud.onDelete(\'{0}\',\'{1}\');"><i class="icon-times" title="{2}"></i></a>', key, rowName, _BR.TipDelete);
+            funs += _str.format('<button type="button" class="btn btn-link" onclick="_crud.onDelete(\'{0}\',\'{1}\')"><i class="ico-delete" title="{2}"></i></button>', key, rowName, _BR.TipDelete);
         if (hasView)
-            funs += _str.format('<a onclick="_crud.onView(\'{0}\');"><i class="icon-eye" title="{1}"></i></a>', key, _BR.TipView);
+            funs += _str.format('<button type="button" class="btn btn-link" onclick="_crud.onView(\'{0}\')"><i class="ico-eye" title="{1}"></i></button>', key, _BR.TipView);
 
         return funs;
     },
@@ -89,7 +89,7 @@
      * initial, 傳入簡化的edits[]
      * dtConfig {Object} datatables config
      * edits {Array} 維護畫面設定{object},
-     *   1.null: 表示單一table, 固定捉取formEdit
+     *   1.null: 表示單一table, 固定捉取eform
      *   2.多個edit object, 如果第一個陣列為null, 則使用new EditOne()
      */
     init: function (dtConfig, edits) {
@@ -116,11 +116,11 @@
         _me.divRead = $('#divRead');
         //_me.divReadTool = $('#divReadTool');
         _me.divEdit = $('#divEdit');
-        _me.formFind = $('#formFind');
-        _me.formFind2 = $('#formFind2');
-        if (_me.formFind2.length === 0)
-            _me.formFind2 = null;
-        //_me.formEdit = $('#formEdit');
+        _me.rform = $('#rform');
+        _me.rform2 = $('#rform2');
+        if (_me.rform2.length === 0)
+            _me.rform2 = null;
+        //_me.eform = $('#eform');
 
         _me.edit0 = edit0;
         _me.hasChild = (_fun.notNull(_me.edit0[Childs]) && _me.edit0[Childs].length > 0);
@@ -162,7 +162,7 @@
      */ 
     onFind2: function () {
         //$('.xg-find-form').slideToggle();
-        var find2 = _me.formFind2;
+        var find2 = _me.rform2;
         if (find2 == null)
             return;
         else if (_obj.isShow(find2))
@@ -176,8 +176,8 @@
      * get Find condition
      */
     getFindCond: function () {
-        var row = _form.toJson(_me.formFind);
-        var find2 = _me.formFind2;
+        var row = _form.toJson(_me.rform);
+        var find2 = _me.rform2;
         if (find2 !== null && _obj.isShow(find2))
             _json.copy(_form.toJson(find2), row);
         return row;
@@ -211,7 +211,7 @@
      */
     onCreate: function () {
         _me.key = '';
-        _crud.setEditStatus(_fun.funC);
+        _crud.setEditStatus(_fun.FunC);
         _prog.setPathCreate();
         _crud.resetForm(_me.edit0);
         _form.swap(_me.divEdit);
@@ -222,7 +222,7 @@
      * param key {string} row key
      */
     onUpdate: function (key) {
-        _crud.getJsonAndSetMode(key, _fun.funU);
+        _crud.getJsonAndSetMode(key, _fun.FunU);
     },
 
     /**
@@ -230,7 +230,7 @@
      * param key {string} row key
      */
     onView: function (key) {
-        _crud.getJsonAndSetMode(key, _fun.funV);
+        _crud.getJsonAndSetMode(key, _fun.FunV);
     },
 
     getJsonAndSetMode: function (key, fun) {
@@ -276,9 +276,9 @@
     //set edit form status
     //fun: C,U,V
     setEditStatus: function (fun) {
-        var isView = (fun == _fun.funV);
-        var run = (_me.nowFun == _fun.funV && !isView) ? true :
-            (_me.nowFun != _fun.funV && isView) ? true :
+        var isView = (fun == _fun.FunV);
+        var run = (_me.nowFun == _fun.FunV && !isView) ? true :
+            (_me.nowFun != _fun.FunV && isView) ? true :
                 false;
 
         //set variables
@@ -329,7 +329,7 @@
 
     /**
      * load childs rows into UI(recursive)
-     * will call ufLoadJson()
+     * will call fnLoadJson()
      */
     /*
     loadChild: function (edit, rows) {
@@ -427,8 +427,8 @@
         if (!hasData)
             return null;
 
-        if (!isNew)
-            data.key = key;
+        //if (!isNew)
+        //    data.key = key;
         _crud._removeNull(0, data);
         return data;
     },
@@ -589,8 +589,9 @@
         }
 
         //call ufWhenSave if existed
-        if (_fun.notNull(_me.edit0.ufWhenSave)) {
-            var error = _me.edit0.ufWhenSave();
+        var edit0 = _me.edit0;
+        if (_fun.notNull(edit0.ufWhenSave)) {
+            var error = edit0.ufWhenSave();
             if (error != '') {
                 _tool.msg(error);
                 return;
@@ -607,12 +608,15 @@
         //return;
 
         //save, 固定呼叫 Save action
-        var action = _me.edit0.isNewRow() ? 'SaveCreate' : 'SaveUpdate';
+        var isNew = edit0.isNewRow();
+        var action = isNew ? 'Create' : 'Update';
         var data = null;
         if (_crud.hasFile()) {
             //has files
             data = formData;
             data.append('json', _json.toStr(row));
+            if (!isNew)
+                data.append('key', edit0.getKey());
 
             _ajax.getJsonByFormData(action, data, function (result) {
                 _crud.afterSave(result);
@@ -620,6 +624,9 @@
         } else {
             //no files
             data = { json: _json.toStr(row) };
+            if (!isNew)
+                data.key = edit0.getKey();
+
             _ajax.getJson(action, data, function (result) {
                 _crud.afterSave(result);
             });
@@ -777,9 +784,14 @@
     //=== set mode start ===
     //reset form(recursive)
     resetForm: function (edit) {
+        //reset this
+        edit.reset();
+
+        //reset childs
         var childLen = _crud.getEditChildLen(edit);
         for (var i = 0; i < childLen; i++) {
-            _crud.resetForm(_crud.getEditChild(edit, i));
+            var edit2 = _crud.getEditChild(edit, i);
+            edit2.loadJson();
         }
     },
 
@@ -790,7 +802,7 @@
     toCreateMode: function () {
         //_me.isNew = true;
         _me.key = '';
-        _crud.setEditStatus(_fun.funC);
+        _crud.setEditStatus(_fun.FunC);
         //_me.divReadTool.hide();
         _prog.setPathCreate();
         _crud.resetForm(_me.edit0);
@@ -804,7 +816,7 @@
      */
     /*
     toUpdateMode: function (key) {
-        _crud.setModeAndShow(_fun.funU, key);
+        _crud.setModeAndShow(_fun.FunU, key);
     },
     */
 
@@ -813,7 +825,7 @@
      */
     /*
     toViewMode: function (key) {
-        _crud.setModeAndShow(_fun.funV, key);
+        _crud.setModeAndShow(_fun.FunV, key);
     },
     */
 
@@ -830,7 +842,7 @@
      * check current is fun view or not
      */ 
     isEditMode: function () {
-        return (_me.nowFun !== _fun.funV);
+        return (_me.nowFun !== _fun.FunV);
     },
 
     //=== set mode end ===    

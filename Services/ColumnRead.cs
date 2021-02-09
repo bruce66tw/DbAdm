@@ -11,8 +11,8 @@ namespace DbAdm.Services
         {
             ReadSql = @"
 Select 
-    p.Name as ProjectName, t.Name as TableName,
-    c.Id, c.Name, c.Cname, 
+    p.Code as ProjectCode, t.Code as TableCode,
+    c.Id, c.Code, c.Name, 
     c.Status, c.DataType
 From dbo.[Column] c
 inner join dbo.[Table] t on t.Id=c.TableId
@@ -22,7 +22,7 @@ Order by p.Id, t.Id, c.Sort
             TableAs = "c",
             Items = new [] {
                 new QitemDto { Fid = "ProjectId", Col = "t.ProjectId" },
-                new QitemDto { Fid = "TableName", Col = "t.Name", Op = ItemOpEstr.Like },
+                new QitemDto { Fid = "TableCode", Col = "t.Code", Op = ItemOpEstr.Like },
                 new QitemDto { Fid = "Name", Op = ItemOpEstr.Like },
                 new QitemDto { Fid = "Status" },
             },

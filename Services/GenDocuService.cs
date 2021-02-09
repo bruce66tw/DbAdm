@@ -32,14 +32,14 @@ namespace DbAdm.Services
             var args = new List<object>();
             var sql = @"
 select 
-    p.Name as ProjectName,
-	t.Name as TableName, t.Cname as TableCname,
-	c.Name, c.Cname, c.DataType,
+    p.Code as ProjectCode,
+	t.Code as TableCode, t.Name as TableName,
+	c.Code, c.Name, c.DataType,
 	c.Nullable, c.DefaultValue, c.Note,
 	c.Sort
 from dbo.[Column] c
-inner join dbo.[Table] t on c.TableId = t.Id
-inner join dbo.[Project] p on t.ProjectId = p.Id
+inner join dbo.[Table] t on c.TableId=t.Id
+inner join dbo.[Project] p on t.ProjectId=p.Id
 where 1=1
 ";
             #endregion
@@ -74,11 +74,11 @@ where 1=1
                 goto lab_error;
             }
 
-            //has name, cname
+            //has code, name
             var tables = cols
-                .GroupBy(a => new { a.ProjectName, a.TableName, a.TableCname })
+                .GroupBy(a => new { a.ProjectCode, a.TableCode, a.TableName })
                 .OrderBy(a => a.Key.TableName)
-                .Select(a => new { a.Key.ProjectName, a.Key.TableName, a.Key.TableCname })
+                .Select(a => new { a.Key.ProjectCode, a.Key.TableCode, a.Key.TableName })
                 .ToList();
 
             var tableLen = tables.Count;
@@ -91,7 +91,7 @@ where 1=1
 
             #region prepare stream
             var ms = new MemoryStream();
-            var tplBytes = System.IO.File.ReadAllBytes(tplPath);
+            var tplBytes = File.ReadAllBytes(tplPath);
             ms.Write(tplBytes, 0, (int)tplBytes.Length);
 
             //see: _Word.cs DataIntoStream()
@@ -111,7 +111,7 @@ where 1=1
                 }
 
                 //set project name
-                fileTpl = fileTpl.Replace("[ProjectName]", tables[0].ProjectName);
+                //fileTpl = fileTpl.Replace("[ProjectCode]", tables[0].ProjectCode);
 
                 //get word body start/end pos
                 const string bodyStartTag = "<w:body>";
@@ -145,9 +145,9 @@ where 1=1
                 {
                     //new page: 
                     //do multiple rows first
-                    var tableName = tables[i].TableName;
+                    var tableCode = tables[i].TableCode;
                     var tableCols = cols
-                        .Where(a => a.TableName == tableName)
+                        .Where(a => a.TableCode == tableCode)
                         .OrderBy(a => a.Sort)
                         .ToList();
                     var rowStr = "";
@@ -156,19 +156,16 @@ where 1=1
                         //[S] for Sort, make it shorter for fit word cell
                         rowStr += rowTpl
                             .Replace("[S]", col.Sort.ToString())
+                            .Replace("[Code]", col.Code)
                             .Replace("[Name]", col.Name)
-                            .Replace("[Cname]", col.Cname)
                             .Replace("[DataType]", col.DataType)
                             .Replace("[Nullable]", col.Nullable ? "Y" : "")
                             .Replace("[DefaultValue]", col.DefaultValue)
                             .Replace("[Note]", col.Note);
                     }
 
-                    //fileStr += tplStr.Replace("[Table]", tableName + "(" + tables[i].TableCname + ")");
-                    /*
-                    */
                     //add into fileStr
-                    fileStr += rowLeft.Replace("[Table]", tableName + "(" + tables[i].TableCname + ")") +
+                    fileStr += rowLeft.Replace("[Table]", tableCode + "(" + tables[i].TableName + ")") +
                         rowStr +
                         bodyTpl.Substring(rowEnd + 6);
 

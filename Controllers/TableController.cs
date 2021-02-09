@@ -51,13 +51,13 @@ namespace DbAdm.Controllers
             return Json(new TableEdit().Delete(key));
         }
 
-        public JsonResult SaveCreate(string json)
+        public JsonResult Create(string json)
         {
-            return Json(new TableEdit().SaveCreate(_Json.StrToJson(json)));
+            return Json(new TableEdit().Create(_Json.StrToJson(json)));
         }
-        public JsonResult SaveUpdate(string key, string json)
+        public JsonResult Update(string key, string json)
         {
-            return Json(new TableEdit().SaveUpdate(key, _Json.StrToJson(json)));
+            return Json(new TableEdit().Update(key, _Json.StrToJson(json)));
         }
         #endregion
 

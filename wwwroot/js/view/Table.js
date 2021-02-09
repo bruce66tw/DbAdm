@@ -6,10 +6,10 @@ var _me = {
 			dom: _crud.dtDom,
 			columns: [
                 { data: '_F1' },
-				{ data: 'ProjectName' },
+				{ data: 'ProjectCode' },
 				{ data: 'DbName' },
+				{ data: 'Code' },
 				{ data: 'Name' },
-				{ data: 'Cname' },
                 { data: '_CrudFun' },
 				{ data: 'Status' },
 			],
@@ -28,7 +28,7 @@ var _me = {
         };
 
         //init crud
-        _me.mCol = new EditMany('Id', 'formEditCol', 'tplCol');   //¦hµ§
+        _me.mCol = new EditMany('Id', 'eformCol', 'tplCol');   //¦hµ§
         _crud.init(config, [ null, _me.mCol ]);
 	},
     
@@ -54,7 +54,7 @@ var _me = {
 		_ajax.getJson('GetRows', { key: id }, function (data) {
 			//show row
 			//_form.swap(_me.divEdit);
-			_form.loadRow(_me.formEdit, data[0]);
+			_form.loadRow(_me.eform, data[0]);
 
 			//show rows
 			_me.divCols.empty();
@@ -68,7 +68,7 @@ var _me = {
 			}
 
 			//reset multi validate
-			_valid.reInit(_me.formEdit2);
+			_valid.reInit(_me.eform2);
 		});
 	},
 

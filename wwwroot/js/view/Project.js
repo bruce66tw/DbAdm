@@ -6,7 +6,7 @@
         var config = {
             dom: _crud.dtDom,
             columns: [
-                { data: 'Name' },
+                { data: 'Code' },
                 { data: 'DbName' },
                 { data: '_Fun' },
                 { data: '_CrudFun' },

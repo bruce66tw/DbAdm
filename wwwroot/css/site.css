@@ -10,7 +10,7 @@
   font-display: block;
 }
 
-[class^="icon-"], [class*=" icon-"] {
+[class^="ico-"], [class*=" ico-"] {
   /* use !important to prevent issues with browser extensions that change fonts */
   font-family: 'icomoon' !important;
   speak: never;
@@ -25,79 +25,79 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-.icon-info:before {
+.ico-info:before {
   content: "\e900";
 }
-.icon-to-list:before {
+.ico-back:before {
   content: "\f148";
 }
-.icon-mail:before {
+.ico-mail:before {
   content: "\f003";
 }
-.icon-home:before {
+.ico-home:before {
   content: "\f015";
 }
-.icon-print:before {
+.ico-print:before {
   content: "\f02f";
 }
-.icon-pen:before {
+.ico-pen:before {
   content: "\f040";
 }
-.icon-eye:before {
+.ico-eye:before {
   content: "\f06f";
 }
-.icon-save:before {
+.ico-save:before {
   content: "\f0c8";
 }
-.icon-left2:before {
+.ico-first:before {
   content: "\f100";
 }
-.icon-right2:before {
+.ico-last:before {
   content: "\f101";
 }
-.icon-left:before {
+.ico-prev:before {
   content: "\f104";
 }
-.icon-right:before {
+.ico-next:before {
   content: "\f105";
 }
-.icon-up:before {
+.ico-up:before {
   content: "\f106";
 }
-.icon-down:before {
+.ico-down:before {
   content: "\f107";
 }
-.icon-open:before {
+.ico-open:before {
   content: "\f115";
 }
-.icon-pdf:before {
+.ico-pdf:before {
   content: "\f1c1";
 }
-.icon-word:before {
+.ico-word:before {
   content: "\f1c2";
 }
-.icon-excel:before {
+.ico-excel:before {
   content: "\f1c3";
 }
-.icon-facebook:before {
+.ico-facebook:before {
   content: "\f230";
 }
-.icon-user:before {
+.ico-user:before {
   content: "\f2c0";
 }
-.icon-find:before {
+.ico-find:before {
   content: "\f002";
 }
-.icon-times:before {
+.ico-delete:before {
   content: "\f00d";
 }
-.icon-find2:before {
+.ico-find2:before {
   content: "\f00e";
 }
-.icon-plus:before {
+.ico-plus:before {
   content: "\f067";
 }
-.icon-calendar:before {
+.ico-calendar:before {
   content: "\e953";
 }
 
@@ -1205,6 +1205,6 @@ table.dataTable thead th {
 }
 
 /* font icon(icomoom) */
-[class^="icon-"], [class*=" icon-"] {
+[class^="ico-"], [class*=" ico-"] {
     padding: 1px;
 }

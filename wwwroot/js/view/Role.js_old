@@ -5,9 +5,9 @@ var _me = {
 
     //element to jquery object
     //divRead: null,
-    //formFind: null,
+    //rform: null,
     //divEdit: null,
-    //formEdit: null,
+    //eform: null,
 
     //初始化
     //add page on click
@@ -16,9 +16,9 @@ var _me = {
         //把 html element 對應到 jquery object
         _me.divRead = $('#divRead');
         //_me.divFind = $('#divFind');
-        _me.formFind = $('#formFind');
+        _me.rform = $('#rform');
         _me.divEdit = $('#divEdit');
-        _me.formEdit = $('#formEdit');
+        _me.eform = $('#eform');
         _me.divUsers = $('#_Users');
         _me.divProgs = $('#_Progs');
 
@@ -51,12 +51,12 @@ var _me = {
         //初始化 datatable, table id和action必須對應正確
         _me.dt = _datatable.init('#table1', 'GetPage', config);
         _prog.setReadTitle();
-        //_check.init(_me.formEdit);
+        //_check.init(_me.eform);
     },
 
     //點選查詢資料功能
     onClickFind: function () {
-        _datatable.find(_me.dt, _form.toJson(_me.formFind));
+        _datatable.find(_me.dt, _form.toJson(_me.rform));
     },
 
     clearUsers: function () {
@@ -72,7 +72,7 @@ var _me = {
     //點選新增按鈕, 開啟新增畫面
     onClickAdd: function () {
         _crud.setEditMode(true);
-        _form.reset(_me.formEdit);
+        _form.reset(_me.eform);
         _form.swap(_me.divEdit);
         _me.clearUsers();
     },
@@ -83,7 +83,7 @@ var _me = {
         _ajax.getJson('GetRow', { key: id }, function (data) {
             //單筆
             _form.swap(_me.divEdit);
-            _form.readJson(_me.formEdit, data);
+            _form.readJson(_me.eform, data);
 
             //多筆-user
             _me.clearUsers();
@@ -152,7 +152,7 @@ var _me = {
 
     //return bool
     checkInput: function (fm, row) {
-        var fm = _me.formEdit;
+        var fm = _me.eform;
         if (!_form.checkEmpty(fm, row))
             return false;
 
@@ -163,7 +163,7 @@ var _me = {
     //點選儲存功能
     onClickSave: function () {
         //check input
-        var fm = _me.formEdit;
+        var fm = _me.eform;
         var row = _form.toJson(fm);
         if (!_me.checkInput(fm, row))
             return;

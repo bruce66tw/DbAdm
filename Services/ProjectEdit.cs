@@ -16,12 +16,10 @@ namespace DbAdm.Services
                 Col4 = null,
                 Items = new[] {
                     new EitemDto { Fid = "Id" },
-                    new EitemDto { Fid = "Name", Required = true },
+                    new EitemDto { Fid = "Code", Required = true },
                     new EitemDto { Fid = "DbName", Required = true },
-                    new EitemDto { Fid = "ProjectSpace", Required = true },
+                    //new EitemDto { Fid = "ProjectSpace", Required = true },
                     new EitemDto { Fid = "ProjectPath", Required = true },
-                    //new EitemModel { Fid = "ServiceSpace", Required = true },
-                    //new EitemModel { Fid = "ServicePath", Required = true },
                     new EitemDto { Fid = "ConnectStr", Required = true },
                     new EitemDto { Fid = "Status", Required = true },
                 },
@@ -39,13 +37,15 @@ namespace DbAdm.Services
         }
 
         //key為空白表示新增資料
-        public ResultDto SaveCreate(JObject json)
+        public ResultDto Create(JObject json)
         {
-            return Service().SaveCreate(json);
+            return Service().Create(json);
         }
-        public ResultDto SaveUpdate(string key, JObject json)
+        public ResultDto Update(string key, JObject json)
         {
-            return Service().SaveUpdate(key, json);
+            //return Service().Update(key, json);
+            var result = Service().Update(key, json);
+            return result;
         }
 
         public ResultDto Delete(string key)

@@ -5,7 +5,7 @@
     {
         //base
         public string Fid { get; set; }
-        public string Cname { get; set; }
+        public string Name { get; set; }
         public string DataType { get; set; }
 
         public bool Required { get; set; }

@@ -16,8 +16,8 @@ namespace DbAdm.DbSets
 
         public string Id { get; set; }
         public string ProjectId { get; set; }
-        public string TableId { get; set; }
-        public string FunName { get; set; }
+        public string ProgCode { get; set; }
+        public string ProgName { get; set; }
         public bool LabelHori { get; set; }
         public string ReadSql { get; set; }
         public string TableAs { get; set; }

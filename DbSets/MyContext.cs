@@ -68,9 +68,10 @@ namespace DbAdm.DbSets
                     .HasMaxLength(10)
                     .IsUnicode(false);
 
-                entity.Property(e => e.Cname)
+                entity.Property(e => e.Code)
                     .IsRequired()
-                    .HasMaxLength(30);
+                    .HasMaxLength(30)
+                    .IsUnicode(false);
 
                 entity.Property(e => e.DataType)
                     .IsRequired()
@@ -83,8 +84,7 @@ namespace DbAdm.DbSets
 
                 entity.Property(e => e.Name)
                     .IsRequired()
-                    .HasMaxLength(30)
-                    .IsUnicode(false);
+                    .HasMaxLength(30);
 
                 entity.Property(e => e.Note).HasMaxLength(255);
 
@@ -104,7 +104,12 @@ namespace DbAdm.DbSets
 
                 entity.Property(e => e.Created).HasColumnType("datetime");
 
-                entity.Property(e => e.FunName)
+                entity.Property(e => e.ProgCode)
+                    .IsRequired()
+                    .HasMaxLength(30)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.ProgName)
                     .IsRequired()
                     .HasMaxLength(30);
 
@@ -121,11 +126,6 @@ namespace DbAdm.DbSets
                 entity.Property(e => e.Revised).HasColumnType("datetime");
 
                 entity.Property(e => e.TableAs)
-                    .HasMaxLength(10)
-                    .IsUnicode(false);
-
-                entity.Property(e => e.TableId)
-                    .IsRequired()
                     .HasMaxLength(10)
                     .IsUnicode(false);
             });
@@ -183,7 +183,6 @@ namespace DbAdm.DbSets
                 entity.HasOne(d => d.Etable)
                     .WithMany(p => p.CrudEitem)
                     .HasForeignKey(d => d.EtableId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_CrudEitem_CrudEtable");
             });
 
@@ -225,7 +224,6 @@ namespace DbAdm.DbSets
                 entity.HasOne(d => d.Crud)
                     .WithMany(p => p.CrudEtable)
                     .HasForeignKey(d => d.CrudId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_CrudEtable_Crud");
             });
 
@@ -279,7 +277,6 @@ namespace DbAdm.DbSets
                 entity.HasOne(d => d.Crud)
                     .WithMany(p => p.CrudQitem)
                     .HasForeignKey(d => d.CrudId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_CrudQitem_Crud");
             });
 
@@ -289,11 +286,7 @@ namespace DbAdm.DbSets
                     .HasMaxLength(10)
                     .IsUnicode(false);
 
-                entity.Property(e => e.Cname)
-                    .IsRequired()
-                    .HasMaxLength(30);
-
-                entity.Property(e => e.ColumnName)
+                entity.Property(e => e.ColumnCode)
                     .IsRequired()
                     .HasMaxLength(30)
                     .IsUnicode(false);
@@ -307,6 +300,10 @@ namespace DbAdm.DbSets
                     .HasMaxLength(30)
                     .IsUnicode(false);
 
+                entity.Property(e => e.Name)
+                    .IsRequired()
+                    .HasMaxLength(30);
+
                 entity.Property(e => e.RitemType)
                     .IsRequired()
                     .HasMaxLength(10)
@@ -315,7 +312,6 @@ namespace DbAdm.DbSets
                 entity.HasOne(d => d.Crud)
                     .WithMany(p => p.CrudRitem)
                     .HasForeignKey(d => d.CrudId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_CrudRitem_Crud");
             });
 
@@ -324,6 +320,10 @@ namespace DbAdm.DbSets
                 entity.Property(e => e.Id)
                     .HasMaxLength(10)
                     .IsUnicode(false);
+
+                entity.Property(e => e.Code)
+                    .IsRequired()
+                    .HasMaxLength(30);
 
                 entity.Property(e => e.ConnectStr)
                     .IsRequired()
@@ -335,18 +335,9 @@ namespace DbAdm.DbSets
                     .HasMaxLength(20)
                     .IsUnicode(false);
 
-                entity.Property(e => e.Name)
-                    .IsRequired()
-                    .HasMaxLength(30);
-
                 entity.Property(e => e.ProjectPath)
                     .IsRequired()
                     .HasMaxLength(255)
-                    .IsUnicode(false);
-
-                entity.Property(e => e.ProjectSpace)
-                    .IsRequired()
-                    .HasMaxLength(50)
                     .IsUnicode(false);
             });
 
@@ -356,14 +347,14 @@ namespace DbAdm.DbSets
                     .HasMaxLength(10)
                     .IsUnicode(false);
 
-                entity.Property(e => e.Cname)
-                    .IsRequired()
-                    .HasMaxLength(30);
-
-                entity.Property(e => e.Name)
+                entity.Property(e => e.Code)
                     .IsRequired()
                     .HasMaxLength(30)
                     .IsUnicode(false);
+
+                entity.Property(e => e.Name)
+                    .IsRequired()
+                    .HasMaxLength(30);
 
                 entity.Property(e => e.Note)
                     .IsRequired()

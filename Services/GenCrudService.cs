@@ -17,7 +17,7 @@ namespace DbAdm.Services
     {
         //constant
         const string ColSep = ", ";             //item column seperator
-        const string CrudTable = "[table]";     //key word inside file name
+        const string CrudProg = "[prog]";     //key word inside file name
         const string PosGroup0 = "-abc99";      //impossible for initial
 
         //rows for curdId list
@@ -31,12 +31,12 @@ namespace DbAdm.Services
         private string _tplDir = _Fun.DirRoot + "_template/";
         //generated 6 files, 1(template),2(target folder),3(target file)
         private string[] _crudFiles = new string[] {
-            "Controller.txt", "Controllers", "[table]Controller.cs",
-            "ReadService.txt", "Services", "[table]Read.cs",
-            "EditService.txt", "Services", "[table]Edit.cs",
-            "ReadView.txt", "Views/[table]", "Read.cshtml",
-            "EditView.txt", "Views/[table]", "Edit.cshtml",
-            "JS.txt", "wwwroot/js/view", "[table].js",
+            "Controller.txt", "Controllers", "[prog]Controller.cs",
+            "ReadService.txt", "Services", "[prog]Read.cs",
+            "EditService.txt", "Services", "[prog]Edit.cs",
+            "ReadView.txt", "Views/[prog]", "Read.cshtml",
+            "EditView.txt", "Views/[prog]", "Edit.cshtml",
+            "JS.txt", "wwwroot/js/view", "[prog].js",
         };
         private int _crudFileLen;
 
@@ -61,108 +61,109 @@ namespace DbAdm.Services
 
             //1.get _cruds(Crud rows)
             var db = _Xp.GetDb();
-            _cruds = (from a in db.Crud
-                      join p in db.Project on a.ProjectId equals p.Id
-                      join t in db.Table on a.TableId equals t.Id
-                      where crudIds.Contains(a.Id)
+            _cruds = (from c in db.Crud
+                      join p in db.Project on c.ProjectId equals p.Id
+                      //join t in db.Table on a.TableId equals t.Id
+                      where crudIds.Contains(c.Id)
                       select new CrudDto()
                       {
-                          Id = a.Id,
-                          Project = p.Name,
+                          Id = c.Id,
+                          Project = p.Code,
                           ProjectPath = p.ProjectPath,
-                          FunName = a.FunName,
-                          Table = t.Name,
-                          TableAs = a.TableAs,
-                          LabelHori = a.LabelHori,
-                          ReadSql = a.ReadSql,
-                          HasCreate = a.HasCreate,
-                          HasUpdate = a.HasUpdate,
-                          HasDelete = a.HasDelete,
-                          HasView = a.HasView,
-                          HasExport = a.HasExport,
-                          HasReset = a.HasReset,
-                          AuthType0 = (a.AuthType == 0),
-                          AuthType1 = (a.AuthType == 1),
-                          AuthType2 = (a.AuthType == 2),
+                          ProgName = c.ProgName,
+                          ProgCode = c.ProgCode,
+                          TableAs = c.TableAs,
+                          LabelHori = c.LabelHori,
+                          ReadSql = c.ReadSql,
+                          HasCreate = c.HasCreate,
+                          HasUpdate = c.HasUpdate,
+                          HasDelete = c.HasDelete,
+                          HasView = c.HasView,
+                          HasExport = c.HasExport,
+                          HasReset = c.HasReset,
+                          AuthType0 = (c.AuthType == 0),
+                          AuthType1 = (c.AuthType == 1),
+                          AuthType2 = (c.AuthType == 2),
                       })
                       .ToList();
 
-            _qitems = (from a in db.CrudQitem
-                       join c in db.Column on a.ColumnId equals c.Id
-                       where crudIds.Contains(a.CrudId)
-                       orderby a.CrudId, a.Sort
+            _qitems = (from q in db.CrudQitem
+                       join c in db.Column on q.ColumnId equals c.Id
+                       where crudIds.Contains(q.CrudId)
+                       orderby q.CrudId, q.Sort
                        select new CrudQitemDto()
                        {
-                           CrudId = a.CrudId,
-                           Fid = c.Name,
-                           Cname = c.Cname,
+                           CrudId = q.CrudId,
+                           Fid = c.Code,
+                           Name = c.Name,
                            DataType = c.DataType,
-                           PosGroup = a.PosGroup,
-                           LayoutCols = a.LayoutCols,
+                           PosGroup = q.PosGroup,
+                           LayoutCols = q.LayoutCols,
                            PlaceHolder = "",
-                           IsFind2 = a.IsFind2,
-                           Op = a.Op,
-                           InputType = a.InputType,
-                           InputData = a.InputData,
+                           IsFind2 = q.IsFind2,
+                           Op = q.Op,
+                           InputType = q.InputType,
+                           InputData = q.InputData,
                        })
                        .ToList();
 
             //2.get _crudRitems(CrudRitem rows)
-            _ritems = (from a in db.CrudRitem
-                       where crudIds.Contains(a.CrudId)
-                       orderby a.CrudId, a.Sort
+            _ritems = (from r in db.CrudRitem
+                       where crudIds.Contains(r.CrudId)
+                       orderby r.CrudId, r.Sort
                        select new CrudRitemDto()
                        {
-                           CrudId = a.CrudId,
-                           RitemType = a.RitemType,
-                           ExtInfo = a.ExtInfo,
-                           Cname = a.Cname,
-                           Width = a.Width,
-                           ColumnName = a.ColumnName,
+                           CrudId = r.CrudId,
+                           RitemType = r.RitemType,
+                           ExtInfo = r.ExtInfo,
+                           Name = r.Name,
+                           Width = r.Width,
+                           ColumnCode = r.ColumnCode,
                            //Column = c.Name,
                        })
                        .ToList();
 
             //3.get _crudEtable(CrudEtable rows)
-            _etables = (from a in db.CrudEtable
-                        join t in db.Table on a.TableId equals t.Id
-                        where crudIds.Contains(a.CrudId)
+            _etables = (from e in db.CrudEtable
+                        join t in db.Table on e.TableId equals t.Id
+                        where crudIds.Contains(e.CrudId)
                         select new CrudEtableDto()
                         {
-                            Id = a.Id,
-                            CrudId = a.CrudId,
-                            Table = t.Name,
-                            TableCname = t.Cname,
-                            PkeyFid = a.Kid,
-                            FkeyFid = a.MapFid,
-                            HasCol4 = (a.Col4 == "1"),
-                            OrderBy = a.OrderBy,
+                            Id = e.Id,
+                            CrudId = e.CrudId,
+                            TableCode = t.Code,
+                            TableName = t.Name,
+                            PkeyFid = e.Kid,
+                            FkeyFid = e.MapFid,
+                            HasCol4 = (e.Col4 == "1"),
+                            HalfWidth = e.HalfWidth,
+                            OrderBy = e.OrderBy,
                         })
                         .ToList();
 
             //4.get _crudEitem(CrudEitem rows)
-            _eitems = (from a in db.CrudEitem
-                       join t in db.CrudEtable on a.EtableId equals t.Id
-                       join c in db.Column on a.ColumnId equals c.Id
+            _eitems = (from e in db.CrudEitem
+                       join t in db.CrudEtable on e.EtableId equals t.Id
+                       join c in db.Column on e.ColumnId equals c.Id
                        where crudIds.Contains(t.CrudId)
                        select new CrudEitemDto()
                        {
                            EtableId = t.Id,
-                           Fid = c.Name,
-                           Cname = c.Cname,
+                           Fid = c.Code,
+                           Name = c.Name,
                            DataType = c.DataType,
-                           Required = a.Required,
-                           HasCreate = a.HasCreate,
-                           HasUpdate = a.HasUpdate,
-                           CheckType = a.CheckType,
-                           CheckData = a.CheckData,
-                           InputType = a.InputType,
-                           InputData = a.InputData,
-                           PosGroup = a.PosGroup,
-                           LayoutCols = a.LayoutCols,
-                           PlaceHolder = a.PlaceHolder,
-                           Sort = a.Sort,
-                           Width = a.Width,
+                           Required = e.Required,
+                           HasCreate = e.HasCreate,
+                           HasUpdate = e.HasUpdate,
+                           CheckType = e.CheckType,
+                           CheckData = e.CheckData,
+                           InputType = e.InputType,
+                           InputData = e.InputData,
+                           PosGroup = e.PosGroup,
+                           LayoutCols = e.LayoutCols,
+                           PlaceHolder = e.PlaceHolder,
+                           Sort = e.Sort,
+                           Width = e.Width,
                        })
                        //.OrderBy(a => new { a.EtableId, a.Sort })  //.net core not support !!
                        .OrderBy(a => a.EtableId).ThenBy(a => a.Sort)
@@ -309,7 +310,8 @@ namespace DbAdm.Services
             {
                 //array len are different, seperate to 2 arrays
                 var jsStrs = new List<string>();  //part fields for js
-                for (i = 0; i < ritems.Count; i++)
+                var ritemLen = ritems.Count;
+                for (i = 0; i < ritemLen; i++)
                 {
                     var ritem = ritems[i];
                     ritem.ViewStr = GetRViewHeadStr(ritem);
@@ -318,6 +320,26 @@ namespace DbAdm.Services
                     if (jsStr != "")
                         jsStrs.Add(jsStr);
                 }
+
+                /*
+                //add crudFun if need
+                if (crud.HasCreate || crud.HasUpdate || crud.HasDelete)
+                {
+                    var ritem = new CrudRitemDto()
+                    {
+                        RitemType = RitemTypeEstr.CrudFun,
+                        Width = 100,
+                        Name = "維護",
+                    };
+                    ritems.Add(new CrudRitemDto()
+                    {
+                        ViewStr = GetRViewHeadStr(ritem)
+                    });
+
+                    jsStrs.Add(GetJsColDefStr(crud, ritem, ritemLen));
+                }
+                */
+
                 crud.Ritems = ritems;
                 crud.JsColDefStrs = jsStrs;
             }
@@ -387,19 +409,18 @@ namespace DbAdm.Services
                         .FirstOrDefault();
                     table.Eitems.Add(new CrudEitemDto()
                     {
-                        //Cname = "",
                         HeadStr = "<th></th>",
                         //@await Component.InvokeAsync("XgDeleteRow", "_me.mCol.onDeleteRow(this)")
                         ViewStr = string.IsNullOrEmpty(table.SortFid)
-                            ? "<td width='60px' class='text-center'>@await Component.InvokeAsync(\"XgDeleteRow\", \"_me.m" + table.Table + ".onDeleteRow(this)\")</td>"
-                            : "<td width='100px' class='text-center'>@await Component.InvokeAsync(\"XgDeleteUpDown\", \"_me.m" + table.Table + "\")</td>",
+                            ? "<td width='60px' class='text-center'>@await Component.InvokeAsync(\"XgDeleteRow\", \"_me.m" + table.TableCode + ".onDeleteRow(this)\")</td>"
+                            : "<td width='100px' class='text-center'>@await Component.InvokeAsync(\"XgDeleteUpDown\", \"_me.m" + table.TableCode + "\")</td>",
                     });
                     childTables.Add(table);
                 }
 
                 //ManyTables
                 crud.ManyTables = string.Join(", ", crud.ChildTables
-                    .Select(a => "_me.m" + a.Table)
+                    .Select(a => "_me.m" + a.TableCode)
                     .ToList());
 
                 //set crud.HasFile
@@ -428,9 +449,9 @@ namespace DbAdm.Services
                 var result = HttpUtility.HtmlDecode(mustache(crud));
 
                 //if file existed, return false
-                var tableName = crud.Table;
-                var toDir = projectPath + _Str.AddAntiSlash(_crudFiles[i + 1]).Replace(CrudTable, tableName);
-                var toFile = toDir + _crudFiles[i + 2].Replace(CrudTable, tableName);
+                var tableCode = crud.ProgCode;
+                var toDir = projectPath + _Str.AddAntiSlash(_crudFiles[i + 1]).Replace(CrudProg, tableCode);
+                var toFile = toDir + _crudFiles[i + 2].Replace(CrudProg, tableCode);
                 //var toFile = _File.GetNextFileName(toDir + _crudFiles[i + 2].Replace(CrudTable, tableName), true);
                 if (File.Exists(toFile))
                     File.Copy(toFile, _File.GetNextFileName(toFile, true));
@@ -499,7 +520,7 @@ namespace DbAdm.Services
         private string GetRViewHeadStr(CrudRitemDto item)
         {
             return "<th" + (item.Width == 0 ? ">" : " width='" + item.Width + "px'>") +
-                item.Cname + 
+                item.Name + 
                 "</th>";
         }
 
@@ -570,7 +591,7 @@ namespace DbAdm.Services
         private string GetViewItemStr(CrudEtableDto table, CrudEitem0Dto item, bool isMany = false)
         {
             var center = false;
-            var cname = isMany ? "" : item.Cname;
+            var name = isMany ? "" : item.Name;
             string str;
             switch (item.InputType)
             {
@@ -582,12 +603,14 @@ namespace DbAdm.Services
 
                 case InputTypeEstr.Text:
                 case InputTypeEstr.TextArea:
-                    var type = (item.InputType == InputTypeEstr.Text) 
-                        ? "XiText" : "XiTextArea";
-                    str = GetCompFirst(type) + 
+                case InputTypeEstr.Password:
+                    var compType = (item.InputType == InputTypeEstr.TextArea) 
+                        ? "XiTextArea" : "XiText";
+                    str = GetCompFirst(compType) + 
                         GetCols(
-                            ViewTitle(cname),
+                            ViewTitle(name),
                             ViewFid(item.Fid),
+                            (item.InputType == InputTypeEstr.Password) ? ViewType("password") : "",
                             ViewMaxLen(item.DataType),
                             ViewRequired(item.Required),
                             ViewInRow(item.IsGroup),
@@ -598,7 +621,7 @@ namespace DbAdm.Services
                 case InputTypeEstr.Numeric:
                     str = GetCompFirst("XiNum") +
                         GetCols(
-                            ViewTitle(cname),
+                            ViewTitle(name),
                             ViewFid(item.Fid),
                             //ViewMaxLen(item.DataType),
                             ViewRequired(item.Required),
@@ -611,7 +634,7 @@ namespace DbAdm.Services
                     center = true;
                     str = GetCompFirst("XiCheck") + 
                         GetCols(
-                            ViewTitle(cname),
+                            ViewTitle(name),
                             ViewFid(item.Fid),
                             //KeyValue("value", "1", true),
                             ViewInRow(item.IsGroup),
@@ -631,7 +654,7 @@ namespace DbAdm.Services
                 case InputTypeEstr.Select:
                     str = GetCompFirst("XiSelect") + 
                         GetCols(
-                            ViewTitle(cname),
+                            ViewTitle(name),
                             ViewFid(item.Fid),
                             ViewSelectRows(item),
                             ViewRequired(item.Required),
@@ -643,7 +666,7 @@ namespace DbAdm.Services
                 case InputTypeEstr.File:
                     str = GetCompFirst("XiFile") + 
                         GetCols(
-                            ViewTitle(cname),
+                            ViewTitle(name),
                             ViewFid(item.Fid),
                             ViewRequired(item.Required),
                             ViewInRow(item.IsGroup),
@@ -654,10 +677,10 @@ namespace DbAdm.Services
                 case InputTypeEstr.Modal:
                     item.Width = 85;
                     center = true;
-                    //item.Cname for modal title
+                    //item.Name for modal title
                     str = GetCompFirst("XgOpenModal") +
                         GetCols(
-                            ViewTitle(item.Cname),
+                            ViewTitle(item.Name),
                             ViewFid(item.Fid),
                             ViewMaxLen(item.DataType),
                             ViewRequired(item.Required)) +
@@ -715,13 +738,13 @@ namespace DbAdm.Services
             return (item.Required || !string.IsNullOrEmpty(item.PlaceHolder))
                 ? GetCompFirst("XgTh") +
                     GetCols(
-                        ViewTitle(item.Cname),
+                        ViewTitle(item.Name),
                         ViewPlaceHolder(item.PlaceHolder),
                         ViewRequired(item.Required)) +
                     GetCompEnd()
                 : string.Format("<th{0}>{1}</th>", 
                     (string.IsNullOrEmpty(item.LayoutCols) || item.LayoutCols=="0" ? "" : " width='" + item.LayoutCols + "'"), 
-                    item.Cname);
+                    item.Name);
         }
         #endregion
 
@@ -734,6 +757,10 @@ namespace DbAdm.Services
         private string ViewFid(string fid)
         {
             return KeyValue("fid", fid, true);
+        }
+        private string ViewType(string type)
+        {
+            return KeyValue("type", type, true);
         }
         /*
         //get view input data

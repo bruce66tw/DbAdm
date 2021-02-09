@@ -5,10 +5,10 @@ var _me = {
         var config = {
             dom: _crud.dtDom,
             columns: [
-                { data: 'ProjectName' },
-                { data: 'TableName' },
+                { data: 'ProjectCode' },
+                { data: 'TableCode' },
+                { data: 'Code' },
                 { data: 'Name' },
-                { data: 'Cname' },
                 { data: 'DataType' },
                 { data: '_CrudFun' },
                 { data: 'Status' },

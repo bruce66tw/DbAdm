@@ -6,8 +6,8 @@ var _me = {
 			dom: _crud.dtDom,
 			columns: [
                 { data: '_F1' },
-				{ data: 'ProjectName' },
-				{ data: 'TableName' },
+                { data: 'ProjectCode' },
+				{ data: 'ProgCode' },
                 { data: '_CrudFun' },
 				{ data: 'Status' },
                 { data: 'Created' },
@@ -27,21 +27,13 @@ var _me = {
         };
 
         //constant
-        _me.TableId = 'TableId';    //column name of TableId
+        _me.TableId = 'TableId';    //column name of TableId for many forms
         _me.Active = 'active';      //active class
 
-        //維護4個tables: crud,Ritem,Etable,Eitem
-        /*
-        _crud.init(config, new EditOne('Id', 'formEdit', [
-            new EditMany('Id', 'tplRitem', 'formEditRitem'),
-            new EditMany('Id', 'tplTabEtable', null, [
-                new EditMany('Id', 'tplEitemTr'),
-            ]),
-        ]));
-        */
+        //maintain tables:
         _me.edit0 = new EditOne();
-        _me.mQitem = new EditMany('Id', 'formEditQitem', 'tplQitem');
-        _me.mRitem = new EditMany('Id', 'formEditRitem', 'tplRitem');
+        _me.mQitem = new EditMany('Id', 'eformQitem', 'tplQitem');
+        _me.mRitem = new EditMany('Id', 'eformRitem', 'tplRitem');
         _me.mEtable = new EditMany('Id', null, 'tplTabEtable');
         _me.mEitem = new EditMany('Id', null, 'tplEitemTr');
         _me.mEtable._childs = [_me.mEitem];
@@ -53,16 +45,12 @@ var _me = {
         _me.eitemChdIdx = 0;    //child index of Eitem
 
         //custom function
-        _me.edit0.ufAfterLoadJson = _me.edit0_AfterLoadJson;
-        _me.edit0.ufWhenSave = _me.edit0_WhenSave;
+        _me.edit0.fnAfterLoadJson = _me.edit0_afterLoadJson;
+        _me.edit0.fnAfterSave = _me.edit0_whenSave;
         //
-        _me.mEtable.ufLoadJson = _me.mEtable_LoadJson;
-        _me.mEtable.ufValid = _me.mEtable_Valid;
-        _me.mEtable.ufGetUpdJson = _me.mEtable_GetUpdJson;
-        //
-        //_me.mEitem.ufLoadRows = _me.mEitem_LoadRows;
-        //_me.mEitem.ufValid = _me.mEitem_Valid;
-        //_me.mEitem.ufGetUpdRows = _me.mEitem_GetUpdRows;
+        _me.mEtable.fnLoadJson = _me.mEtable_loadJson;
+        _me.mEtable.fnGetUpdJson = _me.mEtable_getUpdJson;
+        _me.mEtable.fnValid = _me.mEtable_valid;
 
         //Qitem(Q)
         _me.tplQitem = $('#tplQitem').html();
@@ -72,7 +60,7 @@ var _me = {
         _me.tplRitem = $('#tplRitem').html();
         _me.divRitemBody = $('#divRitemBody');
 
-        //CrudEdit table(用nav表示)
+        //CrudEdit table(use nav)
         _me.navEtable = $('#navEtable');
         _me.tabEtable = $('#tabEtable');
         _me.tplNavEtable = $('#tplNavEtable').html();
@@ -82,7 +70,7 @@ var _me = {
         _me.tplEitemTr = $('#tplEitemTr').html();
         _me.divEitemBody = $('#divEitemBody');
 
-        //Item modal(Q,R,E共用)
+        //Item modal(for Q,R,E)
         _me.modalItems = $('#modalItems');    //modal for select items
         _me.divItemsBody = _me.modalItems.find('tbody');
         _me.tplItemTr = $('#tplItemTr').html();   //tpl of modal item row
@@ -91,8 +79,8 @@ var _me = {
         _me.ritemTableId = '';  //now ritem table Id
         _me.tables = [];        //for table dropdownlist
         _me.etableLen = 0;      //edit table count(累加)
-        _me.nowItemType = '';   //R,E,S
-        _me.nowEtableIdx = 0;   //now edit nav selected index
+        _me.etableIdx = 0;      //now edit nav selected index
+        _me.nowItemType = '';   //modal item type: R,E,S
 
         _me.swapEitemCols();
 	},
@@ -112,25 +100,25 @@ var _me = {
     },
 
     getProjectId: function () {
-        return _iselect.get('ProjectId', _crud.getForm0());
+        return _iselect.get('ProjectId', _crud.getEform0());
     },
 
     //設定 etable TableId(dropdown)
-    edit0_AfterLoadJson: function (json) {
+    edit0_afterLoadJson: function (json) {
         //設定 tables list, 非同步, 傳入 function parameter 
-        _me.onChangeProject(_me.getProjectId(), function () {
-            _me.edit0_AfterLoadJson2(json);
+        _me.onChangeProject(function () {
+            _me.edit0_afterLoadJson2(json);
         });
 
         //reset
         _me.swapEitemCols();
     },
 
-    //called by edit0_AfterLoadRow()
-    edit0_AfterLoadJson2: function (json) {
+    //called by edit0_afterLoadRow()
+    edit0_afterLoadJson2: function (json) {
         //設定 form0 tableId select 欄位
-        var form = _crud.getForm0();
-        _iselect.set(_me.TableId, json[_me.TableId], form);
+        //var form = _crud.getEform0();
+        //_iselect.set(_me.TableId, json[_me.TableId], form);
 
         //設定 tabEtable(s) tableId select 欄位
         var navRows = _crud.getChildRows(json, _me.etableChdIdx);
@@ -149,7 +137,7 @@ var _me = {
     },
 
     //設定sort
-    edit0_WhenSave: function () {
+    edit0_whenSave: function () {
 
         //qitem set sort
         _me.divQitemBody.find('.xu-tr').each(function (i, item) {
@@ -189,20 +177,19 @@ var _me = {
     },
 
     //load etable
-    mEtable_LoadJson: function (json) {
+    mEtable_loadJson: function (json) {
         //empty first
         _me.navEtable.empty();
         _me.tabEtable.empty();
 
         //null表示沒資料
-        //var rows = rowJson._rows;
-        var rows = json[_crud.Rows];
-        if (rows == null || rows.length === 0)
+        if (json == null || json[_crud.Rows] == null)
             return;
 
         //_me.etableNavRemoveAct();
 
         //render etables & eitems
+        var rows = json[_crud.Rows];
         var eitemRows = _crud.getChildRows(json, 0);
         for (var i = 0; i < rows.length; i++) {
             //add tab (only)
@@ -246,63 +233,9 @@ var _me = {
         */
     },
 
-    /*
-    //load eitem
-    mEitem_LoadRows: function (rows) {
-        //null表示沒資料
-        //var rows = rowJson._rows;
-        if (rows == null || rows.length == 0)
-            return;
-
-        //_me.etableNavRemoveAct();
-        _me.tabEtable.find('form').each(function () {
-            //filter rows and render
-            var form = $(this);
-            var ftRows = _json.filterRows(rows, 'EtableId', _itext.get('Id', form));
-            _me.mEitem.loadRows(form.find('tbody'), ftRows);
-
-            _valid.init(form);
-        });
-    },
-    */
-
-    //return boolean
-    mEtable_Valid: function () {
-        var status = true;
-        _me.getEtableForms().each(function (i, item) {
-            //focus nav first, or will not work !!
-            var form = $(item);
-            //var nav = _me.getEtableNav(form.data('index'));
-            //_me.focusEtableNav(nav);
-
-            //validate etable
-            var status = form.valid();
-
-            //validate eitem
-            if (status)
-                status = _me.getEitemForm(form).valid();
-
-            if (!status) {
-                //status = false;
-                //_me.nowEtableIdx = i;
-                var idx = form.data('index');
-                _me.focusEtableNav(_me.getEtableNav(idx));
-                return false;   //break;
-            }
-        });
-        return status;
-    },
-
-    /*
-    //return boolean
-    mEitem_Valid: function () {
-        return true;
-    },
-    */
-
     //GetUpdJson
-    mEtable_GetUpdJson: function () {
-        var upKey = _itext.get('Id', _crud.getForm0());
+    mEtable_getUpdJson: function (upKey) {
+        //var upKey = _itext.get('Id', _crud.getEform0());
         var rows = [];
         var eitems = [];
         _me.getEtableForms().each(function (i, item) {
@@ -331,26 +264,32 @@ var _me = {
         };
     },
 
-    /*
-    //here!! 改到 mEtable_GetUpdRows() 處理
-    //set mapId
-    mEitem_GetUpdRows: function () {
-        var rows = [];
+    //return boolean
+    mEtable_valid: function () {
+        var status = true;
         _me.getEtableForms().each(function (i, item) {
+            //focus nav first, or will not work !!
             var form = $(item);
-            var upKey = _iselect.get(_me.TableId, form);
-            var rows2 = _me.mEitem.getUpdRowsByArg(upKey, form.find('tbody'), '.xu-tr');
+            //var nav = _me.getEtableNav(form.data('index'));
+            //_me.focusEtableNav(nav);
 
-            //set data mapId !!
-            //if (rows2 != null)
-            //    _me.mEitem.rowsSetFkeyFid(rows2, _itext.get('Id', form));
+            //validate etable
+            var status = form.valid();
 
-            _json.appendRows(rows2, rows);
+            //validate eitem
+            if (status)
+                status = _me.getEitemForm(form).valid();
+
+            if (!status) {
+                //status = false;
+                //_me.etableIdx = i;
+                var idx = form.data('index');
+                _me.focusEtableNav(_me.getEtableNav(idx));
+                return false;   //break;
+            }
         });
-
-        return rows;
+        return status;
     },
-    */
 
     //onclick generate crud
     onGenCrud: function () {
@@ -395,18 +334,23 @@ var _me = {
 
     //on change project id
     //多個地方呼叫
-    //tableId: 如果有值, 則設定tableId欄位
     //fnCallback: (optional) callback function
-    onChangeProject: function (tableId, fnCallback) {
-        var form = _crud.getForm0();
+    onChangeProject: function (fnCallback) {
+        //var form = _crud.getEform0();
         //var pid = _iselect.get('ProjectId', form);
         var pid = _me.getProjectId();
         if (pid !== '') {
             _ajax.getJson('/Xp/GetTables', { projectId: pid }, function (rows) {
                 _me.tables = rows;
-                _iselect.setItems(_me.TableId, rows, form);
-                if (!_str.isEmpty(tableId))
-                    _iselect.set(_me.TableId, tableId, form);
+                //_iselect.setItems(_me.TableId, rows, form);
+                //if (!_str.isEmpty(tableId))
+                //    _iselect.set(_me.TableId, tableId, form);
+
+                //set item modal tables
+                var obj = _obj.get(_me.TableId, _me.modalItems);
+                _iselect.setItemsO(obj, _me.tables);
+                _iselect.setO(obj, '');
+    
                 if (fnCallback !== undefined)
                     fnCallback();
             });
@@ -419,8 +363,9 @@ var _me = {
         //如果為主table, 則不必重新讀取
         //_me.initRitemDt();
 
+        /*
         //get tableId
-        var form = _crud.getForm0();
+        var form = _crud.getEform0();
         var tableId = _iselect.get(_me.TableId, form);
 
         //get編輯畫面tableId
@@ -428,10 +373,12 @@ var _me = {
             _tool.msg('請先選取資料表。');
             return;
         }
+        */
 
         //set nowItemType
         _me.nowItemType = type;
-        
+
+        /*
         //set modal tableId if need
         var obj = _obj.get(_me.TableId, _me.modalItems);
         var modalTableId = _iselect.getO(obj);
@@ -443,6 +390,7 @@ var _me = {
             _iselect.setO(obj, tableId);
             _me.changeItemTable(tableId);
         }
+        */
 
         //show modal
         _modal.showO(_me.modalItems);
@@ -473,19 +421,19 @@ var _me = {
     //onclick ok at Item(R/Q/E) modal
     onItemModalOk: function () {
         //get checked columns list
-        var crudId = _itext.get('Id', _crud.getForm0());
+        //var crudId = _itext.get('Id', _crud.getEform0());
         var rows = [];
         _me.divItemsBody.find(':checkbox:checked').each(function (idx) {
             var obj = $(this);
             var tr = obj.closest('tr');
             //data 屬性不區分大小寫 !!
             rows[idx] = {
-                //TableName: tr.data('tablename'),
                 //CrudId: crudId, //mapId
+                //!!
                 ColumnId: tr.data('id'),
-                ColumnName: tr.data('name'),    //for Ritem
+                ColumnCode: tr.data('code'),    //for Ritem
+                Code: tr.data('code'),
                 Name: tr.data('name'),
-                Cname: tr.data('cname'),
                 DataType: tr.data('datatype'),
                 //inputType ??
             };
@@ -538,11 +486,10 @@ var _me = {
         _me.etableNavRemoveAct();
 
         //add tab
-        //debugger;
         var index = _me.etableLen;
         var json = { Index: index };
         var newTab = $(Mustache.render(_me.tplTabEtable, json));
-        _me.mEtable.boxSetNewId(newTab);
+        _me.mEtable.boxSetNewId(newTab);    //set new row key !!
         _iselect.setItems(_me.TableId, _me.tables, newTab); //set dropdown source
         _me.tabEtable.append(newTab);
 
@@ -552,8 +499,7 @@ var _me = {
         _me.navEtable.append(newNav);
         _me.etableLen++;
 
-        //focus first tab
-        //newNav.find('a').click();
+        //focus new nav
         _me.focusEtableNav(newNav);
 
         //show edit table name(after nav added tab)
@@ -561,6 +507,53 @@ var _me = {
 
         //reset
         _me.swapEitemCols();
+    },
+
+    onEtableDelete: function () {
+        //check
+        if (_me.etableLen == 0)
+            return;
+
+        //confirm
+        debugger;
+        _tool.ans('是否移除畫面資料?', function () {
+            var nav = _me.getEtableNav();
+            var tab = _me.getEtableTab();
+
+            //get left/right one
+            var nav2;
+            var index = (_me.etableIdx == _me.etableLen - 1)
+                ? _me.etableIdx - 1 : _me.etableIdx;
+            if (index >= 0) {
+                nav2 = (index === _me.etableIdx)
+                    ? nav.next() : nav.prev();
+            }
+
+            //=== delete rows ===
+            //delete etable row
+            var form = _me.getEtableForm(tab);
+            var key = _me.mEtable.getKey(form);
+            _me.mEtable.deleteRow(key);
+
+            //delete eitem rows
+            var form2 = _me.getEitemForm(form);
+            form2.find('.xu-tr').each(function () {
+                key = _me.mEitem.getKey($(this));
+                _me.mEitem.deleteRow(key);
+            });
+            //===
+
+            //delete objects
+            _me.etableNavRemoveAct();
+            tab.remove();
+            nav.remove();
+            _me.etableLen--;
+            etableIdx = index;
+
+            //focus new tab
+            if (index >= 0)
+                _me.focusEtableNav(nav2);
+        });
     },
 
     onEtableLeft: function () {
@@ -613,32 +606,16 @@ var _me = {
         _me.tabEtable.find('.tab-pane.' + _me.Active).removeClass(_me.Active);
     }, 
 
-    /*
-    //edit edit set active
-    navSetAct: function (index) {
-        var find = _me.getNowEtableIdx(index);
-        _me.navEtable.find('li' + find).addClass(_me.Active);
-        _me.tabEtable.find('.tab-pane' + find).addClass(_me.Active);
-    }, 
-    */
-
     //onclick etable nav
     onEtableNav: function (index) {
         //_me.etableNavRemoveAct();
-        _me.nowEtableIdx = index;
+        _me.etableIdx = index;
     },
-
-    /*
-    //get edit edit active nav
-    getNowEtableIdx: function (index) {
-        return '[data-index=' + index + ']';
-    },
-    */
 
     //get edit edit active nav
     //return nav object
     getEtableNav: function (index) {
-        index = index || _me.nowEtableIdx;
+        index = index || _me.etableIdx;
         var find = '[data-index=' + index + ']';
         return _me.navEtable.find('li' + find);
     },
@@ -646,12 +623,15 @@ var _me = {
     //get edit edit active tab
     //return tab object
     getEtableTab: function (index) {
-        index = index || _me.nowEtableIdx;
+        index = index || _me.etableIdx;
         return _me.tabEtable.find('#divEtable' + index);
     },
 
     getEtableForms: function () {
         return _me.tabEtable.find('.xg-form');
+    },
+    getEtableForm: function (tabObj) {
+        return tabObj.find('.xg-form');
     },
 
     /*

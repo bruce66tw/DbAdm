@@ -179,6 +179,6 @@
 }
 
 /* font icon(icomoom) */
-[class^="icon-"], [class*=" icon-"] {
+[class^="ico-"], [class*=" ico-"] {
     padding: 1px;
 }

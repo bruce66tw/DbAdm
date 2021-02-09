@@ -16,8 +16,8 @@ namespace DbAdm.Services
                 Items = new[] {
                     new EitemDto { Fid = "Id" },
                     new EitemDto { Fid = "ProjectId", Required = true },
-                    new EitemDto { Fid = "TableId", Required = true },
-                    new EitemDto { Fid = "FunName", Required = true },
+                    new EitemDto { Fid = "ProgCode", Required = true },
+                    new EitemDto { Fid = "ProgName", Required = true },
                     new EitemDto { Fid = "LabelHori", Required = true },
                     new EitemDto { Fid = "ReadSql" },
                     new EitemDto { Fid = "TableAs" },
@@ -37,7 +37,7 @@ namespace DbAdm.Services
                         //全部child readSql都使用 in 語法
                         ReadSql = @"
 select a.*,
-	c.Name, c.Cname, c.DataType
+	c.Code, c.Name, c.DataType
 from dbo.CrudQitem a
 join dbo.[Column] c on a.ColumnId=c.Id
 where a.CrudId in ({0})
@@ -81,8 +81,8 @@ order by a.Sort
                         Items = new [] {
                             new EitemDto { Fid = "Id" },
                             new EitemDto { Fid = "CrudId" },
-                            new EitemDto { Fid = "ColumnName", Required = true },
-                            new EitemDto { Fid = "Cname", Required = true },
+                            new EitemDto { Fid = "ColumnCode", Required = true },
+                            new EitemDto { Fid = "Name", Required = true },
                             new EitemDto { Fid = "Width", /*Type = ItemTypeEnum.Num*/ },
                             new EitemDto { Fid = "RitemType", Required = true },
                             new EitemDto { Fid = "ExtInfo" },
@@ -103,6 +103,7 @@ order by a.Sort
                             new EitemDto { Fid = "Kid", Required = true },
                             new EitemDto { Fid = "MapFid" },
                             new EitemDto { Fid = "Col4" },
+                            new EitemDto { Fid = "HalfWidth" },
                             new EitemDto { Fid = "OrderBy" },
                             new EitemDto { Fid = "Sort", Required = true },
                         },
@@ -112,7 +113,7 @@ order by a.Sort
                             {
                                 ReadSql = @"
 select a.*,
-	c.Name, c.Cname, c.DataType
+	c.Code, c.Name, c.DataType
 from dbo.CrudEitem a
 join dbo.[Column] c on a.ColumnId=c.Id
 where a.EtableId in ({0})
@@ -158,18 +159,18 @@ order by a.Sort
             return Service().GetJson(key);
         }
 
-        public ResultDto SaveCreate(JObject json)
+        public ResultDto Create(JObject json)
         {
             #region check input
             //Etable不可重複
             #endregion
 
-            return Service().SaveCreate(json);
+            return Service().Create(json);
         }
 
-        public ResultDto SaveUpdate(string key, JObject json)
+        public ResultDto Update(string key, JObject json)
         {
-            return Service().SaveUpdate(key, json);
+            return Service().Update(key, json);
         }
 
         /*

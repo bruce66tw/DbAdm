@@ -13,25 +13,25 @@ namespace DbAdm.Services
         {
             ReadSql = @"
 select 
-    a.Id, a.Name, a.Cname, a.Status, 
-    p.Name as ProjectName, p.DbName
+    a.Id, a.Code, a.Name, a.Status, 
+    p.Code as ProjectCode, p.DbName
 from dbo.[Table] a
-inner join dbo.Project p on p.Id = a.ProjectId
+inner join dbo.Project p on p.Id=a.ProjectId
 order by p.Id, a.Name
 ",
             ExportSql = @"
 select 
-    a.Name, a.Cname,  
-    p.Name as ProjectName, p.DbName
+    a.Code, a.Name,  
+    p.Code as ProjectCode, p.DbName
 from dbo.[Table] a
-inner join dbo.Project p on p.Id = a.ProjectId
+inner join dbo.Project p on p.Id=a.ProjectId
 order by p.Id, a.Name
 ",
             TableAs = "a",
             Items = new [] {
                 new QitemDto { Fid = "ProjectId" },
-                new QitemDto { Fid = "Name", Op = ItemOpEstr.Like },
-                new QitemDto { Fid = "Cname", Op = ItemOpEstr.Like2 },
+                new QitemDto { Fid = "Code", Op = ItemOpEstr.Like },
+                new QitemDto { Fid = "Name", Op = ItemOpEstr.Like2 },
                 new QitemDto { Fid = "Status" },
             },
         };

@@ -9,8 +9,8 @@ namespace DbAdm.DbSets
     {
         public string Id { get; set; }
         public string ProjectId { get; set; }
+        public string Code { get; set; }
         public string Name { get; set; }
-        public string Cname { get; set; }
         public string Note { get; set; }
         public bool Status { get; set; }
     }

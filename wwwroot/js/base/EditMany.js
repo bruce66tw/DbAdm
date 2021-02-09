@@ -91,8 +91,8 @@ function EditMany(kid, formId, tplRowId, sortFid) {
     /**
      * reset edit form
      */
-    this.reset = function () {
-        //this.loadRows();
+    this.resetVar = function () {
+        //this.loadJson();
         //if (!this.hasForm)
         //    return;
 
@@ -107,15 +107,17 @@ function EditMany(kid, formId, tplRowId, sortFid) {
      */
     this.loadJson = function (json) {
         //reset first
-        this.reset();
+        this.resetVar();
 
-        if (json == null || json[_crud.Rows] == null)
-            return;
+        //if (json == null || json[_crud.Rows] == null)
+        //    return;
 
-        if (this.hasForm)
-            this.loadRows(this.rowsBox, json[_crud.Rows]);
-        else
-            this.ufLoadJson(json);
+        if (this.hasForm) {
+            var rows = (json == null || json[_crud.Rows] == null) ? null : json[_crud.Rows];
+            this.loadRows(this.rowsBox, rows);
+        } else {
+            this.fnLoadJson(json);
+        }
     };
 
     /**
@@ -130,7 +132,7 @@ function EditMany(kid, formId, tplRowId, sortFid) {
         if (this.hasForm)
             this.loadRows(this.rowsBox, rows);
         else
-            this.ufLoadJson(rows);
+            this.fnLoadJson(rows);
     };
     */
 
@@ -205,7 +207,7 @@ function EditMany(kid, formId, tplRowId, sortFid) {
     this.valid = function () {
         return (this.hasForm)
             ? this.form.valid()
-            : this.ufValid();
+            : this.fnValid();
     };
 
     /**
@@ -250,7 +252,7 @@ function EditMany(kid, formId, tplRowId, sortFid) {
      */
     this.getUpdJson = function (upKey) {
         if (!this.hasForm)
-            return this.ufGetUpdJson();
+            return this.fnGetUpdJson();
 
         var json = {};
         json[_crud.Rows] = this.getUpdRowsByArg(upKey, this.rowsBox);
@@ -378,8 +380,8 @@ function EditMany(kid, formId, tplRowId, sortFid) {
 
     /**
      * add deleted row & remove UI row
-     * param {string} key: row key
-     * param {object} (optional)trObj tr object
+     * param key {string} row key
+     * param trObj {object} (optional) tr object
      */ 
     this.deleteRow = function (key, trObj) {
         var rows = this.deletedRows;
@@ -397,10 +399,11 @@ function EditMany(kid, formId, tplRowId, sortFid) {
         if (!found)
             rows[rowLen] = key;
 
-        //remove row
+        //remove UI row if need
         //if (this.hasForm && trObj)
-            //this.rowsBox.remove(trObj);
-        trObj.remove();
+        //this.rowsBox.remove(trObj);
+        if (_obj.isExist(trObj))
+            trObj.remove();
     };
 
     /**
@@ -571,6 +574,7 @@ function EditMany(kid, formId, tplRowId, sortFid) {
     /**
     * @param {string} rows checkbox data-id value
     */
+    /*
     this.zz_boxLoadData = function (rows) {
         var len = (rows == null) ? 0 : rows.length;
 
@@ -588,6 +592,7 @@ function EditMany(kid, formId, tplRowId, sortFid) {
         this.newIndex = 0;
         this.deletedRows = [];
     };    
+    */
 
     this.rowSetFkeyFid = function (row, fkeyFid) {
         if (row != null && this.isNewRow(row))

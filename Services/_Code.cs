@@ -18,18 +18,24 @@ namespace DbAdm.Services
 
         public static List<IdStrDto> TableToCodes(string table, Db db = null)
         {
-            var sql = string.Format(@"
+            var sql = $@"
 select 
     Id, Name as Str
-from dbo.[{0}]
+from dbo.[{table}]
 order by Id
-", table);
+";
             return SqlToCodes(sql, db);
         }
 
         public static List<IdStrDto> GetProjects(Db db = null)
         {
-            return TableToCodes("Project", db);
+            var sql = @"
+select 
+    Id, Code as Str
+from dbo.Project
+order by Id
+";
+            return SqlToCodes(sql, db);
         }
 
         //get code table rows for 下拉式欄位
@@ -52,10 +58,10 @@ order by Id
 
             var sql = string.Format(@"
 select 
-    Id, Name as Str
+    Id, Code as Str
 from dbo.[Table]
 where ProjectId='{0}'
-order by Id
+order by Code
 ", projectId);
             return SqlToCodes(sql, db);
         }

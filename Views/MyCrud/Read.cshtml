@@ -10,7 +10,7 @@
     <!-- read form-->
     <div id="divRead" class="xg-swap xg-active">
         <!-- condition -->
-        <form id='formFind' class='xg-form' style="margin-bottom:0;">
+        <form id='rform' class='xg-form' style="margin-bottom:0;">
             <div class="row">
                 @await Component.InvokeAsync("XiSelect", new { title = "專案", fid = "ProjectId2", rows = (List<IdStrDto>)ViewBag.Projects, inRow = true })
                 @await Component.InvokeAsync("XgFindTbar")
@@ -20,7 +20,7 @@
 
         <!-- other functions -->
         <div class="xg-btns-box">
-            @await Component.InvokeAsync("XgCreate", new { onClickFn = "_me.onCreate()" })
+            @await Component.InvokeAsync("XgCreate", new { fnOnClick = "_me.onCreate()" })
             <button type="button" class="btn xg-btn" onclick="_me.onGenCrud()">產生CRUD</button>
         </div>
 
@@ -30,7 +30,7 @@
                 <tr>
                     <th width="60px" class="xg-center">選取</th>
                     <th>專案</th>
-                    <th>資料表</th>
+                    <th>功能代碼</th>
                     <th width='80px'>維護功能</th>
                     <th width='60px' class="xg-center">資料狀態</th>
                     <th width='100px'>建立日期</th>

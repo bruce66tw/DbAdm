@@ -34,9 +34,9 @@ namespace DbAdm.Controllers
         #endregion
 
         #region Edit View
-        BaseResourceDto _baseInfo;
+        BaseResDto _baseInfo;
         public ActionResult Edit(
-            IBaseResourceService baseInfoService)
+            IBaseResService baseInfoService)
         {
             _baseInfo = baseInfoService.GetData();
             return View();
@@ -59,13 +59,13 @@ namespace DbAdm.Controllers
             return Json(new MyCrudEdit().Delete(key));
         }
 
-        public JsonResult SaveCreate(string json)
+        public JsonResult Create(string json)
         {
-            return Json(new MyCrudEdit().SaveCreate(_Json.StrToJson(json)));
+            return Json(new MyCrudEdit().Create(_Json.StrToJson(json)));
         }
-        public JsonResult SaveUpdate(string key, string json)
+        public JsonResult Update(string key, string json)
         {
-            return Json(new MyCrudEdit().SaveUpdate(key, _Json.StrToJson(json)));
+            return Json(new MyCrudEdit().Update(key, _Json.StrToJson(json)));
         }
         #endregion
 

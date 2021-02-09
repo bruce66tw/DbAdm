@@ -14,7 +14,8 @@ var _ajax = {
             url: url,
             type: 'POST',
             data: data,
-            dataType: 'json',   //backend return json(JsonResult)
+            //dataType: backend return type: xml, html, script, json, jsonp, text
+            dataType: 'json',   //JsonResult
             //processData: false
         };
         _ajax._call(json, fnOk, fnError);
@@ -22,6 +23,10 @@ var _ajax = {
 
     /**
      * ajax return json by FormData, for upload file
+     * param url {string}
+     * param data {json}
+     * param fnOk {function}
+     * param fnError {function}
      * return {json}
      */
     getJsonByFormData: function (url, data, fnOk, fnError) {
@@ -30,9 +35,9 @@ var _ajax = {
             type: 'POST',
             cache: false,
             data: data,
-            contentType: false,     //false!! 傳入參數編碼方式, default為 "application/x-www-form-urlencoded"
-            dataType: 'json',       //TODO: pending test
-            processData: false,     //false!! if true it will convert input data to string, then get error !!
+            contentType: false, //false!! input type, default 'application/x-www-form-urlencoded; charset=UTF-8'
+            dataType: 'json',   //TODO: pending test
+            processData: false, //false!! if true it will convert input data to string, then get error !!
         };
         _ajax._call(json, fnOk, fnError);
     },

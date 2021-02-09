@@ -47,13 +47,16 @@ namespace DbAdm.Controllers
         }
 
         [HttpPost]
-        public JsonResult SaveCreate(string json)
+        public JsonResult Create(string json)
         {
-            return Json(new ProjectEdit().SaveCreate(_Json.StrToJson(json)));
+            return Json(new ProjectEdit().Create(_Json.StrToJson(json)));
         }
-        public JsonResult SaveUpdate(string key, string json)
+        public JsonResult Update(string key, string json)
         {
-            return Json(new ProjectEdit().SaveUpdate(key, _Json.StrToJson(json)));
+            //return Json(new ProjectEdit().Update(key, _Json.StrToJson(json)));
+            var result = new ProjectEdit().Update(key, _Json.StrToJson(json));
+            return Json(result);
+            //return Content(_Model.ToJsonStr(result));
         }
         #endregion
 

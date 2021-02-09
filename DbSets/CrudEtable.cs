@@ -20,6 +20,7 @@ namespace DbAdm.DbSets
         public string Col4 { get; set; }
         public string OrderBy { get; set; }
         public int Sort { get; set; }
+        public bool HalfWidth { get; set; }
 
         public virtual Crud Crud { get; set; }
         public virtual ICollection<CrudEitem> CrudEitem { get; set; }

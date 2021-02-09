@@ -8,7 +8,7 @@ using Newtonsoft.Json.Linq;
 
 namespace {{Project}}.Services
 {
-    public class {{Table}}Read
+    public class {{ProgCode}}Read
     {
         private ReadDto dto = new ReadDto()
         {
@@ -35,7 +35,7 @@ namespace {{Project}}.Services
 	{{#if HasExport}}
         public void Export(JObject cond)
         {
-            _WebExcel.ScreenByCrud(dto, cond, "{{Table}}", _Locale.GetFilePath("{{Table}}.xlsx"), 1);
+            _WebExcel.ScreenByCrud(dto, cond, "{{ProgCode}}", _Locale.GetFilePath("{{ProgCode}}.xlsx"), 1);
         }
 
 	{{/if}}

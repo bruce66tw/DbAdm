@@ -16,8 +16,8 @@ namespace DbAdm.Services
                 Col4 = null,
                 Items = new EitemDto[] {
                     new EitemDto() { Fid = "Id" },
+                    new EitemDto() { Fid = "Code" },
                     new EitemDto() { Fid = "Name" },
-                    new EitemDto() { Fid = "Cname" },
                     new EitemDto() { Fid = "Status" },
                     new EitemDto() { Fid = "Note" },
                 },
@@ -28,7 +28,7 @@ namespace DbAdm.Services
         {
             return _Db.GetJson(@"
 Select 
-    p.Name as ProjectName, t.Name as TableName,
+    p.Code as ProjectCode, t.Code as TableCode,
     c.*
 From dbo.[Column] c
 inner join dbo.[Table] t on t.Id=c.TableId
@@ -38,14 +38,14 @@ where c.Id=@Id
         }
 
         //key為空白表示新增資料
-        public ResultDto SaveCreate(JObject json)
+        public ResultDto Create(JObject json)
         {            
-            return new CrudEdit(GetModel()).SaveCreate(json);
+            return new CrudEdit(GetModel()).Create(json);
         }
 
-        public ResultDto SaveUpdate(string key, JObject json)
+        public ResultDto Update(string key, JObject json)
         {
-            return new CrudEdit(GetModel()).SaveUpdate(key, json);
+            return new CrudEdit(GetModel()).Update(key, json);
         }
 
         public ResultDto Delete(string key)

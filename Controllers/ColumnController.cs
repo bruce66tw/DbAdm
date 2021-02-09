@@ -40,14 +40,14 @@ namespace DbAdm.Controllers
             return Content(new ColumnEdit().GetJson(key).ToString(), _Web.AppJson, Encoding.UTF8);
         }
 
-        public JsonResult SaveCreate(string json)
+        public JsonResult Create(string json)
         {
-            return Json(new ColumnEdit().SaveCreate(_Json.StrToJson(json)));
+            return Json(new ColumnEdit().Create(_Json.StrToJson(json)));
         }
 
-        public JsonResult SaveUpdate(string key, string json)
+        public JsonResult Update(string key, string json)
         {
-            return Json(new ColumnEdit().SaveUpdate(key, _Json.StrToJson(json)));
+            return Json(new ColumnEdit().Update(key, _Json.StrToJson(json)));
         }
 
         public JsonResult Delete(string key)
