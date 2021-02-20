@@ -84,7 +84,7 @@ var _idate = $.extend({}, _ibase, {
     render: function (dataId, value, required, extClass) {
         extClass = extClass || '';
         if (required === true)
-            extClass += ' ' + _fun.xdRequired;
+            extClass += ' ' + _fun.XdRequired;
         //span 要放在外面, 跟 XiDateHelper 不同 !!
         return _str.format("" +
             "<div class='input-group date xg-date' data-provide='datepicker'>" +

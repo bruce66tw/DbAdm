@@ -3,7 +3,12 @@
 //must loaded first, or will got error !!
 var _ibase = {
 
-    //get value by fid
+    /**
+     * get value by fid
+     * param fid {string}
+     * param box {object}
+     * return {string}
+     */ 
     get: function (fid, box) {
         return _ibase.getO(_obj.get(fid, box));
     },

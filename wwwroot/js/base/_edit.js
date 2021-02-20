@@ -94,6 +94,7 @@ var _edit = {
 
     /**
      * set file related variables: fileFids, fileLen, hasFile
+     * called by EditOne/EditMany init()
      * param me {edit} EditOne/EditMany variables
      * param box {object} form or row object
      * return void

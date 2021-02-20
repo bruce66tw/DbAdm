@@ -1,33 +1,30 @@
-﻿
-/**
- * 注意:
- *   保留的自訂函數: 
- *     void ufAfterLoadJson(rowJson)
- *     error ufWhenSave():
- *     void ufAfterSave(): 在 _crud.js呼叫
+﻿/**
+ * single edit form, called by _crud.js
+ * json row for both EditOne/EditMany has fields:
+ *   _rows {json array}: updated rows include upload files
+ *   _deletes {strings}: deleted key strings, seperate with ','
+ *   _childs {json array}: child json array
  * 
- */
-
-/**
- * 單筆維護, 包含以下保留欄位:
- *   _edit:
- *   _childs:
- * called by _crud.js
+ * custom function called by _crud.js
+ *   void fnAfterLoadJson(json)
+ *   error fnWhenSave()
+ *   void fnAfterSave()
+ *   
  * param kid {string} (optional 'Id') key field id
- * param formId {string} (optional 'eform')
+ * param eformId {string} (optional 'eform')
  * return {EditOne}
  */ 
-function EditOne(kid, formId) {
+function EditOne(kid, eformId) {
 
-    //constant 
-    //this.DataOld = '_old';      //    //舊資料存在 data 屬性, 內容必須與 _editMany.DataOld 相同
-
+    /**
+     * initial
+     */
     this.init = function () {
         this.kid = kid || 'Id';
-        this.form = $('#' + (formId || 'eform'));     //multiple rows container object
+        this.eform = $('#' + (eformId || 'eform'));     //multiple rows container object
 
-        _edit.setFidTypeVars(this, this.form);
-        _edit.setFileVars(this, this.form);
+        _edit.setFidTypeVars(this, this.eform);
+        _edit.setFileVars(this, this.eform);
     };
 
     /**
@@ -35,7 +32,7 @@ function EditOne(kid, formId) {
      * return {bool}
      */
     this.getKey = function () {
-        return _input.get(this.kid, this.form);
+        return _input.get(this.kid, this.eform);
     };
 
     /**
@@ -46,13 +43,17 @@ function EditOne(kid, formId) {
         return _str.isEmpty(this.getKey());
     };
 
+    /**
+     * load row into UI, also save into old variables
+     * param row {json}
+     */
     this.loadRow = function (row) {
-        _form.loadRow(this.form, row);
+        _form.loadRow(this.eform, row);
 
         //set old value for each field
         for (var i = 0; i < this.fidTypeLen; i = i + 2) {
             fid = this.fidTypes[i];
-            var obj = _obj.get(fid, this.form);
+            var obj = _obj.get(fid, this.eform);
             obj.data(_edit.DataOld, row[fid]);
         }
     };
@@ -62,25 +63,28 @@ function EditOne(kid, formId) {
      * return {json} different column only
      */
     this.getUpdRow = function () {
-        return _edit.getUpdRow(this.kid, this.fidTypes, this.form);
+        return _edit.getUpdRow(this.kid, this.fidTypes, this.eform);
     };
 
+    /**
+     * reset UI and edited variables
+     */
     this.reset = function () {
-        _form.reset(this.form);
+        _form.reset(this.eform);
     };
 
     /**
      * set form to editable or not
-     * status {bool} editable or not
+     * param status {bool} editable or not
      */
     this.setEdit = function (status) {
-        _form.setEdit(this.form, status);
+        _form.setEdit(this.eform, status);
     };
 
     /**
      * formData add files
-     * param {string} levelStr
-     * param {FormData} data
+     * param levelStr {string}
+     * param data {FormData}
      * return {json} file json
      */
     this.dataAddFiles = function (levelStr, data) {
@@ -91,7 +95,7 @@ function EditOne(kid, formId) {
         for (var i = 0; i < this.fileLen; i++) {
             var fid = this.fileFids[i];
             var serverFid = _edit.getServerFid(levelStr, fid);
-            if (_ifile.dataAddFile(data, fid, serverFid, this.form)) {
+            if (_ifile.dataAddFile(data, fid, serverFid, this.eform)) {
                 fileJson[serverFid] = this.getKey();
             }
         }
@@ -99,22 +103,7 @@ function EditOne(kid, formId) {
         return fileJson;
     };
 
-    //=== file event start ===
-    //file field be triggered
-    this.onFile = function (me) {        
-    };
-
-    this.onOpenFile = function (me) {
-    };
-
-    this.onViewFile = function (me) {
-    };
-
-    this.onDeleteFile = function (me) {
-    };
-    //=== file event end ===
-
-    //最後呼叫
+    //call last
     this.init();
 
 }//class

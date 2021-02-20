@@ -28,7 +28,7 @@ var _me = {
         };
 
         //init crud
-        _me.mCol = new EditMany('Id', 'eformCol', 'tplCol');   //¦hµ§
+        _me.mCol = new EditMany('Id', 'eformCol', 'tplCol', 'tr');   //¦hµ§
         _crud.init(config, [ null, _me.mCol ]);
 	},
     

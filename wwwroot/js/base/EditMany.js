@@ -1,80 +1,50 @@
-﻿//多筆維護
-//處理沒有 child 的資料
-//called by _crud.js
-/*
- 一個 crud json 包含3個欄位: _rows, _deletes, _childs
-   _rows: 多筆資料, 包含資料異動和 "檔案上傳"
-   _deletes[]: 要刪除的Id array 字串(後端才能decode!!), 只有一個 id欄位(必須使用json格式才能傳到後端 !!)
-   _childs  
- 處理編輯畫面的多筆資料, 
-   1.產生的資料(變數)包含3個欄位:
-     form: form container
-     rows[]: 表示要異動的資料 array, 欄位為欄位名稱, 其中 :
-       //_new : 1/0
-       //_key : 主key值, from data-key, for刪除only
-       _fileNo : 欄位對應到要上傳的檔案序號(>=0), -1表示無檔案, -2表示要刪除檔案
- 注意:
-   //1.tr要放一個checkbox欄位 for 刪除資料
-   //2.tr最多只能有一個上傳檔案欄位(也可以沒有)
-   3.系統自動填入tr 2個屬性 :
-     //(a).data-new: 1/0
-     //(b).data-key: 單欄位主key
-   4.異動欄位設定屬性 : name='xxx', xxx為欄位名稱
-   //5.刪除按鈕固定呼叫 : this.onClickDeleteRows(_me.divXXX, _me.XXX)
-   ??5.刪除按鈕固定呼叫 : this.onClickDeleteRows(_me.multiXXX)
-   ??6.檔案欄位固定內容 : <input type='file' onchange='this.onChangeFile(this)'>
-   ??7.在後端要自行處理上傳檔名的問題
-   ??8.刪除多table多筆資料時, 分隔符號為: table(:), row(;), col(,), 後端必須同時配合!!
-   ??9.多筆資料的上傳檔案暫時呼叫 _xp.tdFile(url)
-
- * 注意:
- *   保留的自訂函數:
- *     //void ufAfterLoadJson(rowJson)
- *     //bool ufWhenSave():
- *     //void ufAfterSave(): 在 _crud.js呼叫
-
-   //如果有child, 則新增時要設定 id=new index
-   儲存前要設定 data fkeyFid(base 0, for 新增)
- */
-
-/**
- * constructor
+﻿/**
+ * multiple edit forms
+ * notice:
+ *   1.set data-fkeyFid when save
+ *   
  * param kid {string} pkey field id(single key)
- * param formId {string} form row container id
+ * param eformId {string} edit form id
  *   if not empty, system will load UI & prepare save rows
- *   and rows container tag is fixed to 'tbody'
- * param tplRowId {string} row template id
+ *     and rows container tag is fixed to 'tbody'
+ *   if empty, you could write below custom functions:
+ *     1.void fnLoadJson(json): necessary
+ *     2.json fnGetUpdJson(upKey): necessary
+ *     3.bool fnValid(): optional
+ * param tplRowId {string} row template id, required
  * param sortFid {string} (optional) sort fid for sorting function
+ * param rowFilter {string} (optional 'tr') filter for find row object
+ *   1.inside element -> row(onDeleteRow), 2.rowsBox -> row(getUpdRows)
+ * return {EditMany}
  */
-function EditMany(kid, formId, tplRowId, sortFid) {
+function EditMany(kid, eformId, tplRowId, rowFilter, sortFid) {
 
-    //新增row時, 同時設定以下2個row box 欄位, save時, 會傳入後端
-    //1.row index, 
-    //this.DataIndex = '_index';
-    //2.對應上層資料的key值, 如上層為新增, 則設定為 DataIndex的值(前面加負號, 做為區別)
-    //this.DataMapFid = '_mapfid';
-
+    /**
+     * initial, call by this
+     */ 
     this.init = function () {
 
         //constant
         this.DataFkeyFid = '_fkeyfid';  //data field for fkey fid
-        this.RowTag = 'tr';             //row tag
 
         this.kid = kid;
         this.tplRow = $('#' + tplRowId).html();
+        this.sortFid = sortFid;
+        this.hasRowFilter = !_str.isEmpty(rowFilter);
+        this.rowFilter = rowFilter;
 
         var rowObj = $(this.tplRow);
         _edit.setFidTypeVars(this, rowObj);
         _edit.setFileVars(this, rowObj);
 
-        this.hasForm = !_str.isEmpty(formId);
-        if (this.hasForm) {
-            this.form = $('#' + formId);     //form object
-            this.rowsBox = this.form.find('tbody'); //use tbody
+        //has edit form or not
+        this.hasEform = !_str.isEmpty(eformId);
+        if (this.hasEform) {
+            this.eform = $('#' + eformId);     //edit form object
+            this.rowsBox = this.eform.find('tbody'); //use tbody(in table)
         }
 
-        this.sortFid = sortFid;
-        this.deletedRows = [];  //deleted key array
+        this.deletedRows = [];  //deleted key string array
         this.newIndex = 0;      //new row serial no
     };
 
@@ -90,124 +60,97 @@ function EditMany(kid, formId, tplRowId, sortFid) {
 
     /**
      * reset edit form
+     * param rowsBox {object} optional
      */
-    this.resetVar = function () {
-        //this.loadJson();
-        //if (!this.hasForm)
-        //    return;
+    this.reset = function (rowsBox) {
+        rowsBox = this.getRowsBox(rowsBox);
+        if (rowsBox != null)
+            rowsBox.empty();   //empty rows ui first
 
-        //rowsBox.empty();   //empty rows ui first
+        //reset variables
         this.newIndex = 0;
         this.deletedRows = [];
     };
 
     /**
      * load this json rows into UI
-     * param {jarray} rows
+     * param json {json} 
      */
     this.loadJson = function (json) {
-        //reset first
-        this.resetVar();
-
-        //if (json == null || json[_crud.Rows] == null)
-        //    return;
-
-        if (this.hasForm) {
-            var rows = (json == null || json[_crud.Rows] == null) ? null : json[_crud.Rows];
+        if (this.hasEform) {
+            var rows = (json == null || json[_crud.Rows] == null)
+                ? null : json[_crud.Rows];
             this.loadRows(this.rowsBox, rows);
         } else {
+            //raise error if no function
             this.fnLoadJson(json);
         }
     };
 
     /**
-     * load this json rows into UI
-     * param {jarray} rows
+     * load row by row box(container), also set old value
+     * param rowBox {object}
+     * param row {json}
+     * param index {int}
      */
-    /*
-    this.loadRows = function (rows) {
-        //reset first
-        this.reset();
-
-        if (this.hasForm)
-            this.loadRows(this.rowsBox, rows);
-        else
-            this.fnLoadJson(rows);
-    };
-    */
-
-    //load row by row box(container)
-    this.loadRow = function (box, row, index) {
+    this.loadRow = function (rowBox, row, index) {
         var form = $(Mustache.render(this.tplRow, { Index: index }));
-        _form.loadRow(form, row);   //使用 name
+        _form.loadRow(form, row);   //use name field
 
         //set old value for each field
-        //var fidLen = fidTypes.length;
         for (var i = 0; i < this.fidTypeLen; i = i + 2) {
             fid = this.fidTypes[i];
             var obj = _obj.get(fid, form);
             obj.data(_edit.DataOld, row[fid]);
         }
 
-        box.append(form);
+        rowBox.append(form);
     };
 
     /**
-     * load rows to form UI
-     * param rowsBox {object} rows box container
+     * load rows to form UI, also set old values !!
+     * param rowsBox {object} rows box object
      * param rows {jsons}
      */ 
-    this.loadRows = function (rowsBox, rows) {
-        //reset first
-        rowsBox.empty();
+    this.loadRows = function (rowsBox, rows, reset) {
+        //reset if need
+        if (reset === undefined)
+            reset = true;
+        if (reset)
+            this.reset(rowsBox);
 
         //var rows = json._rows;
         var rowLen = (rows == null) ? 0 : rows.length;
         if (rowLen === 0)
             return;
 
-        //render this rows
-        //var fidTypeLen = fidTypes.length;
+        //render rows
         for (var i = 0; i < rowLen; i++) {
             var row = rows[i];
-            var obj = $(Mustache.render(this.tplRow, row));
-            //obj.data(this.DataIndex, i);    //set row index
+            var box = $(Mustache.render(this.tplRow, row));
+            //box.data(this.DataIndex, i);    //set row index
 
             //set old value for each field
             for (var j = 0; j < this.fidTypeLen; j = j + 2) {
                 fid = this.fidTypes[j];
-                var obj2 = _obj.get(fid, obj);
+                var obj2 = _obj.get(fid, box);
                 _edit.setOld(obj2, row[fid]);
             }
 
-            _form.loadRow(obj, row);
-            /*
-            //設定 checkbox, radio status(後端無法設定) !!
-            //要加入 checkbox 欄位, 只會讀取有name的欄位值
-            obj.find(':checkbox').each(function () {
-                var item = $(this);
-                var id = item.data('id');
-                if (id !== undefined && id.indexOf('-') < 0)
-                    _icheck.setO(item, row[id]);
-            });
+            //one row into UI
+            _form.loadRow(box, row);
 
-            //要加入 radio 欄位, 只會讀取有name的欄位值
-            obj.find(':radio').each(function () {
-                var item = $(this);
-                var id = item.data('id');
-                if (id !== undefined)
-                    _iradio.setO(item, row[id]);
-            });
-            */
-
-            obj.appendTo(rowsBox);
+            //into rows box
+            box.appendTo(rowsBox);
         }        
     };
 
+    /**
+     * validate form
+     */
     this.valid = function () {
-        return (this.hasForm)
-            ? this.form.valid()
-            : this.fnValid();
+        return (this.hasEform) ? this.eform.valid() :
+            (this.fnValid == null) ? true : this.fnValid();
     };
 
     /**
@@ -236,59 +179,82 @@ function EditMany(kid, formId, tplRowId, sortFid) {
         return row;
     };
 
-    /**
-     * get row box by inside object/element
-     * param obj {object/element} 
-     * return {object}
-     */
-    this.getRowBox = function (obj) {
-        return $(obj).closest(this.RowTag);
+    this.checkRowFilter = function () {
+        if (this.hasRowFilter)
+            return true;
+
+        _log.error('EditMany.js this.rowFilter is empty.');
+        return false;
     };
 
     /**
-     * get updated json
-     * param {upKey}
-     * return {json} different column only
+     * get row box by inside element/object
+     * param elm {element/object}
+     * return {object}
      */
-    this.getUpdJson = function (upKey) {
-        if (!this.hasForm)
-            return this.fnGetUpdJson();
+    this.elmToRowBox = function (elm) {
+        return this.checkRowFilter()
+            ? $(elm).closest(this.rowFilter)
+            : null;
+    };
 
+    /**
+     * get updated json, called by crud.js only !!
+     * param upKey {string}
+     * return {json} modified columns only
+     */
+    this.getUpdJsonByCrud = function (upKey) {
+        return (this.hasEform)
+            ? this.getUpdJson(upKey, this.rowsBox)
+            : this.fnGetUpdJson(upKey);
+    };
+
+    /**
+     * get updated json, called by crud.js only
+     * param upKey {string}
+     * param rowsBox {object}
+     * return {json} modified columns only
+     */
+    this.getUpdJson = function (upKey, rowsBox) {
+        rowsBox = this.getRowsBox(rowsBox);
         var json = {};
-        json[_crud.Rows] = this.getUpdRowsByArg(upKey, this.rowsBox);
+        json[_crud.Rows] = this.getUpdRows(upKey, rowsBox);
         json[_crud.Deletes] = this.getDeletedRows();
         return json;
     };
 
-    //是否為new key, parseInt(英數字) 會傳回int, 不可使用!!
+    /**
+     * check a new key or not, parseInt(ABC123) will get int, cannot use it!!
+     * param key {string}
+     */
     this.isNewKey = function (key) {
         return (key.length <= 3);
     };
 
     /**
-     * get updated rows(not include _childs, _deletes)
+     * (need this.rowFilter !!) get updated rows(not include _childs, _deletes)
      * will also set fkeyFid
-     * param rowsBox {object} rows container
-     * param trFilter {string} (optional) default to this.RowTag
-     * return {json} null if empty
+     * param rowsBox {object} (optional) rows container
+     * return {jsons} null if empty
      */ 
-    this.getUpdRowsByArg = function (upKey, rowsBox, trFilter) {
-        //rowsBox = rowsBox || this.rowsBox;
-        trFilter = trFilter || this.RowTag;
+    this.getUpdRows = function (upKey, rowsBox) {
+        if (!this.checkRowFilter())
+            return;
 
         //set sort field
-        this.setSort();
+        rowsBox = this.getRowsBox(rowsBox);
+        this.setSort(rowsBox);
 
         //debugger;
         var rows = [];  //return rows        
-        var me = this;  //先用變數接起來, 否則在 each() 裡面不能用 this
-        rowsBox.find(me.RowTag).each(function (idx, item) {
+        var me = this;  //this is not work inside each() !!
+        rowsBox.find(me.rowFilter).each(function (idx, item) {
             //add new row if empty key
             var tr = $(item);
             var key = _input.get(me.kid, tr);
             if (me.isNewKey(key)) {
                 var row2 = me.getRow(tr);
-                row2[me.DataFkeyFid] = upKey;   //無條件寫入這個欄位!!
+                row2[me.DataFkeyFid] = upKey;   //write anyway !!
                 rows.push(row2);
                 return;     //continue;
             }
@@ -300,7 +266,7 @@ function EditMany(kid, formId, tplRowId, sortFid) {
             var diff = false;
             var fid, ftype, value, obj;
             for (var j = 0; j < me.fidTypes.length; j = j + 2) {
-                //label 不取值
+                //label should ship !!
                 ftype = me.fidTypes[j + 1];
                 if (ftype === 'label')
                     continue;
@@ -308,7 +274,7 @@ function EditMany(kid, formId, tplRowId, sortFid) {
                 fid = me.fidTypes[j];
                 obj = _obj.get(fid, tr);
                 value = _input.getByType(obj, ftype, tr);
-                //如果使用完全比對, 字串和數字會不相等!!
+                //if totally compare, string is not equal to numeric !!
                 if (value != _edit.getOld(obj)) {
                     diffRow[fid] = value;
                     diff = true;
@@ -340,50 +306,41 @@ function EditMany(kid, formId, tplRowId, sortFid) {
             ? null : this.deletedRows.join();
     };    
 
-    //onclick addRow button
+    /**
+     * onclick addRow button
+     */
     this.onAddRow = function () {
         this.addRow();
     };
 
     /**
-     * 增加一筆資料
+     * add one row into UI
      * param {object} row(optional)
      * return {object} row jquery object(with UI)
      */
-    //this.addRow = function (upKey, row) {
-    this.addRow = function (row) {
-        if (!this.hasForm) {
-            _log.error('EditMany.js addRow() failed, hasForm is false.');
-            return null;
-        }
-
+    this.addRow = function (rowsBox, row) {
         row = row || {};
-        //row[this.DataIsNew] = isNew ? 1 : 0;
-        //var isNew = this.isNewRow(row);
-        //if (this.isNewRow(row))
-        //    row[this.kid] = ;
-        //if (this.oldRows == null)
-        //    this.oldRows = [];
-        //this.oldRows[this.oldRows.length] = row;
-
-        var obj = this.renderRow(row);
+        rowsBox = this.getRowsBox(rowsBox);
+        var obj = this.renderRow(rowsBox, row);
         this.boxSetNewId(obj);
         return obj;
     };
 
-    //user click deleteRow
+    /**
+     * onclick deleteRow
+     * param btn {element}
+     */
     this.onDeleteRow = function (btn) {        
-        //var trObj = $(btn).closest(this.RowTag);
-        var trObj = this.getRowBox(btn);
-        this.deleteRow(_itext.get(this.kid, trObj), trObj);
+        var box = this.elmToRowBox(btn);
+        this.deleteRow(_itext.get(this.kid, box), box);
     };
 
     /**
      * add deleted row & remove UI row
      * param key {string} row key
-     * param trObj {object} (optional) tr object
+     * param rowBox {object} (optional) row box object
      */ 
-    this.deleteRow = function (key, trObj) {
+    this.deleteRow = function (key, rowBox) {
         var rows = this.deletedRows;
         var found = false;
         var rowLen = rows.length;
@@ -400,10 +357,8 @@ function EditMany(kid, formId, tplRowId, sortFid) {
             rows[rowLen] = key;
 
         //remove UI row if need
-        //if (this.hasForm && trObj)
-        //this.rowsBox.remove(trObj);
-        if (_obj.isExist(trObj))
-            trObj.remove();
+        if (_obj.isExist(rowBox))
+            rowBox.remove();
     };
 
     /**
@@ -411,7 +366,7 @@ function EditMany(kid, formId, tplRowId, sortFid) {
      * param elm {element} link element
      */
     this.onViewImage = function (table, fid, elm) {
-        var key = this.getKey(this.getRowBox(elm));
+        var key = this.getKey(this.elmToRowBox(elm));
         if (this.isNewKey(key))
             _tool.msg(_BR.NewFileNotView);
         else
@@ -419,35 +374,37 @@ function EditMany(kid, formId, tplRowId, sortFid) {
     };
 
     /**
-     * render row by UI template
-     * return jquery object of row
+     * render row by UI template, called by addRow()
+     * param rowsBox {object}
+     * param row {json}
+     * return {object} row object
      */ 
-    this.renderRow = function (row) {
-        if (!this.hasForm)
-            return null;
-
+    this.renderRow = function (rowsBox, row) {
+        rowsBox = this.getRowsBox(rowsBox);
         var obj = $(Mustache.render(this.tplRow, row));
-        //obj.data(this.kid, row[this.kid]);
-        obj.appendTo(this.rowsBox);
+        _form.loadRow(obj, row);
+        obj.appendTo(rowsBox);
         return obj;
     };
 
     /**
-     * formData add upload files
+     * (need this.rowFilter !!) formData add upload files
      * param levelStr {string}
      * param data {FormData}
      * return {json} file json
      */ 
-    this.dataAddFiles = function (levelStr, data) {
+    this.dataAddFiles = function (levelStr, data, rowsBox) {
         if (!this.hasFile)
             return null;
 
-        //debugger;
-        //var form = this.form;
+        if (!this.checkRowFilter())
+            return null;
+
+        rowsBox = this.getRowsBox(rowsBox);
         var me = this;
         var fileJson = {};
         var fileIdx = {};   //fileFid map index
-        this.rowsBox.find(me.RowTag).each(function (index, item) {
+        rowsBox.find(me.rowFilter).each(function (index, item) {
             var tr = $(item);
             for (var i = 0; i < me.fileLen; i++) {
                 var fid = me.fileFids[i];
@@ -463,142 +420,21 @@ function EditMany(kid, formId, tplRowId, sortFid) {
         return fileJson;
     };
 
-    //=== 以下待修正 ===
     /**
-     @description 2個功能: 
-       1.FormDate 增加上傳檔案
-       2.累加多筆資料
-     如果多筆資料有上傳檔案, 而且是多主key, 則要在後端自行處理上傳檔案名稱的問題 !!
-     注意: radio 有2種情形(true/false):
-         
-     @param {object} data FormData(在外面宣告), 把上傳檔案加到這個變數裡面
-     @param {array} toRows 來源多筆資料, [0]為單筆(已存在), [1]以後為多筆(開始寫入)
-     @param src: container
-     @param oneRadio: 
-       1.false: row有自己的 radio group(default): (此時id & name不同):
-         用id 找name, 取name有checked的項目取值, 再寫回 id欄位
-       2.true: rows共用一個 radio group: (此時id & name相同):
-     //kid: key id欄位名稱, 把key值寫到這個欄位, 如果沒有上傳檔案, 則不需要
-     //setRowsFiles: function (data, src, src, kid) {
-     //@return 資料筆數
-    */
-    //addFilesAndRows: function (data, toRows, src) {
-    //??
-    /*
-    this.dataAddRows = function (data, toRows, src) {
-        //if (oneRadio === undefined)
-        //    oneRadio = false;
-        var fileLen = data.getAll('files').length;    //目前上傳檔案數量
-        var rows = [];      //要異動的多筆資料
-        var fields = [];    //obj. id, type欄位
-        src.box.find('tr').each(function (index, item) {
-            //寫入欄位資訊 fields[id,type] (只寫第一次)
-            var tr = $(item);
-            if (fields.length === 0) {
-                //尋找所有 data-id 的欄位
-                tr.find("[data-id]").each(function (i2, item2) {
-                    var obj2 = $(item2);
-                    fields[i2] = {
-                        //obj: obj2,
-                        id: obj2.data('id'),
-                        type: _input.getType(obj2),
-                    };
-                });
-            }
-
-            //檔案加入 formData, 欄位名稱(後端變數名稱)為 files
-            var fileNo = -1;    //初始化, -1表示無檔案
-            var files = tr.find(':file');
-            if (files.length > 0) {
-                files = files[0].files;
-                if (files.length > 0) {
-                    data.append('files', files[0]);
-                    fileNo = fileLen;
-                    fileLen++;
-                }
-            }
-
-            //寫入異動資料
-            //row為多筆的一筆資料, 保留欄位的名稱加底線
-            var row = { _fileNo: fileNo };  //對應要上傳的檔案位置序號, -1表示無檔案
-            //if (kid !== undefined && kid != '')
-            //    row[kid] = tr.data('key');      //寫入key值
-            row._fun = tr.data(this.dataFun);          //row fun??
-            row._key = tr.data(this.DataKey);          //row key
-            for (var i = 0; i < fields.length; i++) {
-                var field = fields[i];
-                var value = '';
-                var obj = tr.find('[data-id=' + field.id + ']');
-                //考慮多筆的 radio 欄位是否為共用!!
-                row[field.id] = (field.type == 'radio')
-                    ? (src.oneRadio)
-                        ? _iradio.getO(obj, src.box)
-                        : _iradio.get(obj.attr('name'), src.box)
-                    : _input.getByType(obj, field.type, tr);
-            }
-            rows.push(row);
-        });
-
-        //陣列加一
-        toRows[toRows.length] = rows;   //寫入外部 rows
-        src.rows = rows;    //同時寫入自己的rows !!
-        //return rows;
-    };
-
-    //write row key info from jquery object to model
-    this.keyObjToModel = function (obj, model) {
-        model[this.DataIsNew] = obj.data(this.DataIsNew);
-        model[this.DataKey] = obj.data(this.DataKey);
-    };
-    //write row key info from model to jquery object
-    this.keyModelToObj = function (model, obj) {
-        obj.data(this.DataIsNew, model[this.DataIsNew]);
-        obj.data(this.DataKey, model[this.DataKey]);
-    };
-    this.keyModelToModel = function (from, to) {
-        if (!_str.isEmpty(from[this.DataIsNew]))
-            to[this.DataIsNew] = from[this.DataIsNew];
-        if (!_str.isEmpty(from[this.DataKey]))
-            to[this.DataKey] = from[this.DataKey];
-    };
-    this.keyValuesToObj = function (isNew, key, obj) {
-        obj.data(this.DataIsNew, isNew);
-        obj.data(this.DataKey, key);
-    };
-    this.keyValuesToModel = function (isNew, key, model) {
-        model[this.DataIsNew] = isNew;
-        model[this.DataKey] = key;
-    };
-    */
-
-    /**
-    * @param {string} rows checkbox data-id value
-    */
-    /*
-    this.zz_boxLoadData = function (rows) {
-        var len = (rows == null) ? 0 : rows.length;
-
-        //empty rows ui first
-        this.rowsBox.empty();
-
-        //render rows
-        for (var i = 0; i < len; i++)
-            this.rowsBox.append(Mustache.render(this.tplRow, rows[i]));
-
-        //keep old column values
-
-        //reset
-        //this.oldRows = rows;
-        this.newIndex = 0;
-        this.deletedRows = [];
-    };    
-    */
-
+     * row set fkey value
+     * param row {json}
+     * param fkeyFid {string}
+     */
     this.rowSetFkeyFid = function (row, fkeyFid) {
         if (row != null && this.isNewRow(row))
             row[this.DataFkeyFid] = fkeyFid;
     };
 
+    /**
+     * rows set fkey value
+     * param rows {jsons}
+     * param fkeyFid {string}
+     */
     this.rowsSetFkeyFid = function (rows, fkeyFid) {
         if (rows != null) {
             for (var i = 0; i < rows.length; i++) {
@@ -609,31 +445,43 @@ function EditMany(kid, formId, tplRowId, sortFid) {
         }
     };
 
-    /*
-    this.boxSetMapId = function (box, fkeyFid) {
-        box.data(this.DataFkeyFid, fkeyFid);
-    };
-    */
-
-    //set new id for box
+    /**
+     * set new id by row box
+     * param box {object} row box
+     * return {int} new key index
+     */
     this.boxSetNewId = function (box) {
         this.newIndex++;
         _itext.set(this.kid, this.newIndex, box);
+        return this.newIndex;
     };
 
-    //set sort field
-    this.setSort = function () {
+    /**
+     * set sort field if need
+     * param rowsBox {object}
+     */
+    this.setSort = function (rowsBox) {
         var sortFid = this.sortFid;
-        if (!_str.isEmpty(sortFid)) {
-            this.rowsBox.find(this.RowTag).each(function (i, item) {
-                //this did not work in this loop !!
-                _itext.set(sortFid, i, $(item));
-            });
-        }
+        if (_str.isEmpty(sortFid))
+            return;
+
+        rowsBox = this.getRowsBox(rowsBox);
+        rowsBox.find(_fun.getFidFilter(sortFid)).each(function (i, item) {
+            //this did not work in this loop !!
+            _itext.set(sortFid, i, $(item));
+        });
     };
 
+    /**
+     * get rows box
+     * param rowsBox {object} optional, return this.rowsBox if null
+     * return {object}
+     */
+    this.getRowsBox = function (rowsBox) {
+        return rowsBox || this.rowsBox;
+    };
 
-    //=== 最後呼叫 ===
+    //call last
     this.init();
 
     /*

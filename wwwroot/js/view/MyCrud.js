@@ -32,10 +32,10 @@ var _me = {
 
         //maintain tables:
         _me.edit0 = new EditOne();
-        _me.mQitem = new EditMany('Id', 'eformQitem', 'tplQitem');
-        _me.mRitem = new EditMany('Id', 'eformRitem', 'tplRitem');
-        _me.mEtable = new EditMany('Id', null, 'tplTabEtable');
-        _me.mEitem = new EditMany('Id', null, 'tplEitemTr');
+        _me.mQitem = new EditMany('Id', 'eformQitem', 'tplQitem', '.xu-tr');
+        _me.mRitem = new EditMany('Id', 'eformRitem', 'tplRitem', '.xu-tr');
+        _me.mEtable = new EditMany('Id', null, 'tplTabEtable', '.xg-form');
+        _me.mEitem = new EditMany('Id', null, 'tplEitemTr', '.xu-tr');
         _me.mEtable._childs = [_me.mEitem];
 
         _crud.init(config, [_me.edit0, _me.mQitem, _me.mRitem, _me.mEtable]);
@@ -46,7 +46,7 @@ var _me = {
 
         //custom function
         _me.edit0.fnAfterLoadJson = _me.edit0_afterLoadJson;
-        _me.edit0.fnAfterSave = _me.edit0_whenSave;
+        _me.edit0.fnWhenSave = _me.edit0_whenSave;
         //
         _me.mEtable.fnLoadJson = _me.mEtable_loadJson;
         _me.mEtable.fnGetUpdJson = _me.mEtable_getUpdJson;
@@ -247,7 +247,7 @@ var _me = {
             //eitems
             var upKey2 = _iselect.get('Id', form);
             var form2 = _me.getEitemForm(form);
-            var rows2 = _me.mEitem.getUpdRowsByArg(upKey2, form2.find('tbody'), '.xu-tr');
+            var rows2 = _me.mEitem.getUpdRows(upKey2, form2.find('tbody'));
             _json.appendRows(rows2, eitems);
             /*
             if (rows2 != null) {

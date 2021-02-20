@@ -7,7 +7,7 @@ var _obj = {
      * get object by name for input field
      */
     get: function (val, box) {
-        return _obj.getF('[data-fid=' + val + ']', box);
+        return _obj.getF(_fun.getFidFilter(val), box);
     },
 
     /**

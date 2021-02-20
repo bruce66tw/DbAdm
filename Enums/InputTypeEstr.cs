@@ -2,7 +2,7 @@
 namespace DbAdm.Enums
 {
     /// <summary>
-    /// input type, mapping to _Code.InputType
+    /// input type, mapping to Code.type=InputType
     /// </summary>
     public class InputTypeEstr
     {
@@ -20,5 +20,6 @@ namespace DbAdm.Enums
         public const string Sort = "SO";
         public const string Modal = "MO";
         public const string Password = "PWD";
+        public const string ReadOnly = "RO";
     }
 }

@@ -288,7 +288,7 @@ namespace DbAdm.Services
                 fitems.Insert(pos + 1, new CrudQitemDto()
                 {
                     //@await Component.InvokeAsync("XgFindTbar", new { isHorizontal = true, hasReset = true, hasFind2 = true })
-                    RvStr = GetCompFirst("XgFindTbar") +
+                    RvStr = GetCompStart("XgFindTbar") +
                         GetCols(
                             ViewBool("isHorizontal", crud.LabelHori, false),
                             ViewBool("hasReset", crud.HasReset, true),
@@ -413,7 +413,7 @@ namespace DbAdm.Services
                         //@await Component.InvokeAsync("XgDeleteRow", "_me.mCol.onDeleteRow(this)")
                         ViewStr = string.IsNullOrEmpty(table.SortFid)
                             ? "<td width='60px' class='text-center'>@await Component.InvokeAsync(\"XgDeleteRow\", \"_me.m" + table.TableCode + ".onDeleteRow(this)\")</td>"
-                            : "<td width='100px' class='text-center'>@await Component.InvokeAsync(\"XgDeleteUpDown\", \"_me.m" + table.TableCode + "\")</td>",
+                            : "<td width='100px' class='text-center'>@await Component.InvokeAsync(\"XgDeleteUpDown\", new { mName = \"_me.m" + table.TableCode + "\" })</td>",
                     });
                     childTables.Add(table);
                 }
@@ -576,7 +576,7 @@ namespace DbAdm.Services
         /// <returns></returns>
         private string ViewHide(string fid)
         {
-            return GetCompFirst("XiHide") +
+            return GetCompStart("XiHide") +
                 KeyValue("fid", fid, true) +
                 GetCompEnd();
         }
@@ -592,7 +592,7 @@ namespace DbAdm.Services
         {
             var center = false;
             var name = isMany ? "" : item.Name;
-            string str;
+            var str = "";
             switch (item.InputType)
             {
                 case InputTypeEstr.Hide:
@@ -606,7 +606,7 @@ namespace DbAdm.Services
                 case InputTypeEstr.Password:
                     var compType = (item.InputType == InputTypeEstr.TextArea) 
                         ? "XiTextArea" : "XiText";
-                    str = GetCompFirst(compType) + 
+                    str = GetCompStart(compType) + 
                         GetCols(
                             ViewTitle(name),
                             ViewFid(item.Fid),
@@ -619,7 +619,7 @@ namespace DbAdm.Services
                     break;
 
                 case InputTypeEstr.Numeric:
-                    str = GetCompFirst("XiNum") +
+                    str = GetCompStart("XiNum") +
                         GetCols(
                             ViewTitle(name),
                             ViewFid(item.Fid),
@@ -632,7 +632,7 @@ namespace DbAdm.Services
 
                 case InputTypeEstr.CheckBox:
                     center = true;
-                    str = GetCompFirst("XiCheck") + 
+                    str = GetCompStart("XiCheck") + 
                         GetCols(
                             ViewTitle(name),
                             ViewFid(item.Fid),
@@ -642,17 +642,35 @@ namespace DbAdm.Services
                         GetCompEnd();
                     break;
 
+                case "D":   //date
+                    str = GetCompStart("XiDate") +
+                        GetCols(
+                            ViewTitle(name),
+                            ViewFid(item.Fid),
+                            ViewRequired(item.Required),
+                            ViewInRow(item.IsGroup),
+                            ViewLayout(isMany, item.LayoutCols)) +
+                        GetCompEnd();
+                    break;
+
+                case "DT":   //datetime
+                    str = GetCompStart("XiDt") +
+                        GetCols(
+                            ViewTitle(name),
+                            ViewFid(item.Fid),
+                            ViewRequired(item.Required),
+                            ViewInRow(item.IsGroup),
+                            ViewLayout(isMany, item.LayoutCols)) +
+                        GetCompEnd();
+                    break;
+
                 /* TODO: other edit item                  
                 case "R":   //radio
-                    break;
-                case "D":   //date
-                    break;
-                case "DT":   //datetime
                     break;
                 */
 
                 case InputTypeEstr.Select:
-                    str = GetCompFirst("XiSelect") + 
+                    str = GetCompStart("XiSelect") + 
                         GetCols(
                             ViewTitle(name),
                             ViewFid(item.Fid),
@@ -664,7 +682,7 @@ namespace DbAdm.Services
                     break;
 
                 case InputTypeEstr.File:
-                    str = GetCompFirst("XiFile") + 
+                    str = GetCompStart("XiFile") + 
                         GetCols(
                             ViewTitle(name),
                             ViewFid(item.Fid),
@@ -678,12 +696,22 @@ namespace DbAdm.Services
                     item.Width = 85;
                     center = true;
                     //item.Name for modal title
-                    str = GetCompFirst("XgOpenModal") +
+                    str = GetCompStart("XgOpenModal") +
                         GetCols(
                             ViewTitle(item.Name),
                             ViewFid(item.Fid),
                             ViewMaxLen(item.DataType),
                             ViewRequired(item.Required)) +
+                        GetCompEnd();
+                    break;
+
+                case InputTypeEstr.ReadOnly:
+                    str = GetCompStart("XiRead") +
+                        GetCols(
+                            ViewTitle(name),
+                            ViewFid(item.Fid),
+                            ViewInRow(item.IsGroup),
+                            ViewLayout(isMany, item.LayoutCols)) +
                         GetCompEnd();
                     break;
 
@@ -708,7 +736,7 @@ namespace DbAdm.Services
         /// </summary>
         /// <param name="type">component type, ex: XiHide</param>
         /// <returns>part component string</returns>
-        private string GetCompFirst(string type)
+        private string GetCompStart(string type)
         {
             //must escape '{'
             return $"@await Component.InvokeAsync(\"{type}\", new {{ ";
@@ -736,7 +764,7 @@ namespace DbAdm.Services
 
             //@await Component.InvokeAsync("XgTh", new { title = "XXX", required = true })
             return (item.Required || !string.IsNullOrEmpty(item.PlaceHolder))
-                ? GetCompFirst("XgTh") +
+                ? GetCompStart("XgTh") +
                     GetCols(
                         ViewTitle(item.Name),
                         ViewPlaceHolder(item.PlaceHolder),

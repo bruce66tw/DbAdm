@@ -2,7 +2,7 @@
 namespace DbAdm.Enums
 {
     /// <summary>
-    /// query result item type, map to _Code.RitemType
+    /// query result item type, map to Code.type=RitemType
     /// </summary>
     public class RitemTypeEstr
     {

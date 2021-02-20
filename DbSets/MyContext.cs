@@ -40,9 +40,8 @@ namespace DbAdm.DbSets
         {
             modelBuilder.Entity<Code>(entity =>
             {
-                entity.HasKey(e => new { e.Type, e.Code1 });
-
-                entity.ToTable("_Code");
+                entity.HasKey(e => new { e.Type, e.Code1 })
+                    .HasName("PK__Code");
 
                 entity.Property(e => e.Type)
                     .HasMaxLength(10)

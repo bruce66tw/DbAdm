@@ -26,7 +26,7 @@
     <div class="row">
         <!-- left columns -->
         <div class="col-md-6">
-            @await Component.InvokeAsync("XiSelect", new { title = "專案", fid = "ProjectId", rows = (List<IdStrDto>)ViewBag.Projects, required = true, cols = cols2, prop = new PropSelectDto() { FnOnChange = "_me.onChangeProject()" } })
+            @await Component.InvokeAsync("XiSelect", new { title = "專案", fid = "ProjectId", rows = (List<IdStrDto>)ViewBag.Projects, required = true, cols = cols2, fnOnChange = "_me.onChangeProject()" })
             @await Component.InvokeAsync("XiText", new { title = "功能代碼", fid = "ProgCode", maxLen = 30, required = true, cols = cols2 })
             @await Component.InvokeAsync("XiText", new { title = "功能名稱", fid = "ProgName", maxLen = 30, required = true, cols = cols2 })
 
@@ -54,7 +54,7 @@
             @await Component.InvokeAsync("XiSelect", new { title = "權限種類", fid = "AuthType", rows = (List<IdStrDto>)ViewBag.AuthTypes, required = true, cols = cols2 })
             @await Component.InvokeAsync("XiRadios", new { title = "查詢Label位置", fid = "LabelHori", rows = _Str.ToIdStrs("1,水平,0,垂直"), cols = cols2 })
             @await Component.InvokeAsync("XiText", new { title = "資料表別名", fid = "TableAs", maxLen = 10, cols = cols2, tip = "table alias name" })
-            @await Component.InvokeAsync("XiTextArea", new { title = "讀取資料 Sql", fid = "ReadSql", cols = "4,8", prop = new PropTextAreaDto() { RowsNum = 5 } })
+            @await Component.InvokeAsync("XiTextArea", new { title = "讀取資料 Sql", fid = "ReadSql", cols = "4,8", rowsCount = 5 })
         </div>
     </div>
 </form>
@@ -110,7 +110,7 @@
         <td width="60px">@await Component.InvokeAsync("XiText", new { fid = "PosGroup" })</td>
         <td width="80px">@await Component.InvokeAsync("XiText", new { fid = "LayoutCols" })</td>
         <td width="60px" class="xg-center">@await Component.InvokeAsync("XiCheck", new { fid = "IsFind2" })</td>
-        <td width="100px" class="text-center">@await Component.InvokeAsync("XgDeleteUpDown", "_me.mQitem")</td>        
+        <td width="100px" class="text-center">@await Component.InvokeAsync("XgDeleteUpDown", new { mName = "_me.mQitem" })</td>        
     </tr>
 </script>
 
@@ -152,7 +152,7 @@
         <td width="100px">@await Component.InvokeAsync("XiNum", new { fid = "Width" })</td>        
         <td width="250px">@await Component.InvokeAsync("XiSelect", new { fid = "RitemType", rows = (List<IdStrDto>)ViewBag.RitemTypes })</td>
         <td>@await Component.InvokeAsync("XiText", new { fid = "ExtInfo" })</td>
-        <td width="100px" class="text-center">@await Component.InvokeAsync("XgDeleteUpDown", "_me.mRitem")</td>
+        <td width="100px" class="text-center">@await Component.InvokeAsync("XgDeleteUpDown", new { mName = "_me.mRitem" })</td>
     </tr>
 </script>
 
@@ -187,7 +187,7 @@
 
             <div class="row">
                 <div class="col-md-6">
-                    @await Component.InvokeAsync("XiSelect", new { title = "資料表", fid = "TableId", required = true, cols = cols2, prop = new PropSelectDto() { FnOnChange = "_me.onChangeNowTable({{Index}})" } })
+                    @await Component.InvokeAsync("XiSelect", new { title = "資料表", fid = "TableId", required = true, cols = cols2, fnOnChange = "_me.onChangeNowTable({{Index}})" })
                     @await Component.InvokeAsync("XiText", new { title = "主Key欄位", fid = "Kid", maxLen = 10, required = true, cols = cols2 })
                     @await Component.InvokeAsync("XiText", new { title = "對應欄位", fid = "MapFid", maxLen = 10, cols = cols2, tip = "2nd Table則為必填" })
                 </div>
@@ -211,7 +211,7 @@
                         <th>資料型態</th>
                         @*@await Component.InvokeAsync("XgTh", new { title = "欄位種類", tip = "若為下拉欄位, 則必須填欄位資料" })*@
                         <th>欄位種類</th>
-                        @await Component.InvokeAsync("XgTh", new { title = "欄位資料", tip = "下拉欄位:資料來源, checkbox:label" })
+                        @await Component.InvokeAsync("XgTh", new { title = "欄位資料", tip = "下拉欄位:資料來源, checkbox:label, 唯讀:fid" })
                         <th>必填</th>
                         <th>新增</th>
                         <th>修改</th>
@@ -248,12 +248,12 @@
         <td width="50px" class="xg-center">@await Component.InvokeAsync("XiCheck", new { fid = "HasUpdate", isCheck = true })</td>
         <td width="110px">@await Component.InvokeAsync("XiText", new { fid = "PlaceHolder" })</td>
         <td width="70px">@await Component.InvokeAsync("XiText", new { fid = "DefaultValue" })</td>
-        <td width="110px">@await Component.InvokeAsync("XiSelect", new { fid = "CheckType", value = "0", rows = (List<IdStrDto>)ViewBag.CheckTypes, required = true, prop = new PropSelectDto() { AddEmptyRow = false } })</td>
+        <td width="110px">@await Component.InvokeAsync("XiSelect", new { fid = "CheckType", value = "0", rows = (List<IdStrDto>)ViewBag.CheckTypes, required = true, addEmptyRow = false })</td>
         <td width="90px">@await Component.InvokeAsync("XiText", new { fid = "CheckData" })</td>
         <td width="60px">@await Component.InvokeAsync("XiText", new { fid = "PosGroup" })</td>
         <td width="80px" class="xu-layout">@await Component.InvokeAsync("XiText", new { fid = "LayoutCols" })</td>
         <td width="80px" class="xu-width">@await Component.InvokeAsync("XiNum", new { fid = "Width" })</td>        
-        <td width="95px" class="text-center">@await Component.InvokeAsync("XgDeleteUpDown", "_me.mEitem")</td>
+        <td width="95px" class="text-center">@await Component.InvokeAsync("XgDeleteUpDown", new { mName = "_me.mEitem" })</td>
     </tr>
 </script>
 
@@ -272,7 +272,7 @@
                         Table
                     </div>
                     <div class="col-md-6">
-                        @await Component.InvokeAsync("XiSelect", new { fid = "TableId", rows = (List<IdStrDto>)ViewBag.Tables, prop = new PropSelectDto() { FnOnChange = "_me.onChangeItemTable(this)" } })
+                        @await Component.InvokeAsync("XiSelect", new { fid = "TableId", rows = (List<IdStrDto>)ViewBag.Tables, fnOnChange = "_me.onChangeItemTable(this)" })
                     </div>
                     <div class="col-md-4 xg-right">
                         <button type="button" class="btn btn-primary" onclick="_me.onItemModalOk()">確定</button>

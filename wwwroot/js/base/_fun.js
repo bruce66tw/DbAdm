@@ -1,37 +1,30 @@
 ﻿
 //var RB = null;  //resource base
 var _fun = {
-    //errTail: '_err',
-    //xgError: 'xg-error',
-    locale: 'zh-TW',
 
     //=== constant start(大camel) ===
-    //DataKey: '_key',            //編輯資料列的key值欄位id, 空白表示新增
+    Fid: 'fid',            //data-fid
 
     //input field error validation, need match server side _Web.cs
-    jsPath: '../Scripts/',      //js path for load
+    //jsPath: '../Scripts/',      //js path for load
     //errTail: '_err',            //error label 欄位id後面會加上這個字元
-    xiBorder: 'xi-border',           //input border class
+    XiBorder: 'xi-border',           //input border class
     errCls: 'xg-error',           //欄位驗証錯誤時會加上這個 class name
     errLabCls: 'xg-error-label',     //error label 的 class name
     //errBoxCls: 'xg-errorbox', //??_box欄位驗証錯誤時會加上這個 class name
-    xdRequired: 'xd-required',
+    XdRequired: 'xd-required',
 
     //constant for mapping to backend
-    funC: 'C',     //create
-    funR: 'R',     //read
-    funU: 'U',     //update
-    funD: 'D',     //for input file
-    funV: 'V',     //view row
-
-    //value seperator, must match to backend !!
-    //TableSep: ':',
-    //RowSep: ';',
-    //ColSep: ',',
+    FunC: 'C',     //create
+    FunR: 'R',     //read
+    FunU: 'U',     //update
+    FunD: 'D',     //delete, for input file
+    FunV: 'V',     //view row
     //=== constant end ===
 
 
     //變數
+    locale: 'zh-TW',
     maxFileSize: 50971520,  //上傳檔案限制50M
     //localeCode: 'zh-TW',
 
@@ -51,14 +44,11 @@ var _fun = {
     /**
      * get data-fid string, ex: [data-fid=XXX]
      * param fid {stirng} field id
-     * param square {bool} (true)has square or not
+     * param square {bool} (false)has square or not
      * return {string}
      */
-    getDataFid: function (fid, square) {
-        var data = 'data-fid=' + fid;
-        if (square === undefined || square === true)
-            data += '[' + data + ']';
-        return data;
+    getFidFilter: function (fid) {
+        return '[data-fid=' + fid + ']';
     },
 
     /*
@@ -137,7 +127,6 @@ var _fun = {
        me : this component
        fid: field id 
        value: field value
-       onClickFn: (optional) callback function
      */
     //onClickCheckMulti: function (me, fid, value, separator, onClickFn) {
     zz_onChangeMultiCheck: function (me, fid) {

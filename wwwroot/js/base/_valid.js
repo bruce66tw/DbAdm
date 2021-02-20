@@ -37,7 +37,7 @@ var _valid = {
 
     //get input box for validate
     getInputBox: function (element) {
-        return $(element).closest('.' + _fun.xiBorder);
+        return $(element).closest('.' + _fun.XiBorder);
     },
 
     reInit: function (fm, inputConfig) {

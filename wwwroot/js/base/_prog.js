@@ -15,12 +15,16 @@ var _prog = {
         _prog.me.text(_prog.oriPath);
     },
 
-    //for crud, set path for create
-    setPathCreate: function () {
-        _prog.me.text(_prog.oriPath + '-' + _BR.Create);
+    /**
+     * set program path
+     * param fun {string} fun mode
+     */
+    setPath: function (fun) {
+        var name = (fun == _fun.FunC) ? _BR.Create :
+            (fun == _fun.FunU) ? _BR.Update :
+            (fun == _fun.FunV) ? _BR.View :
+            '??';
+        _prog.me.text(_prog.oriPath + '-' + name);
     },
-    //for crud, set path for update
-    setPathUpdate: function () {
-        _prog.me.text(_prog.oriPath + '-' + _BR.Update);
-    },
+
 };

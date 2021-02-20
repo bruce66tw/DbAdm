@@ -323,6 +323,11 @@ var _chart = {
     },
 
 }; //class
+/**
+ * note:
+ *   1.reserved function:
+ *     a.fnAfterSwap(readMode): called after _crud.swap()
+ */
 var _crud = {
 
     //constant
@@ -397,15 +402,15 @@ var _crud = {
      * param hasDelete {bool} has delete icon or not
      * param hasView {bool} has view icon or not
      */
-    dtCrudFun: function (key, rowName, hasUpdate, hasDelete, hasView) {
+    dtCrudFun: function (key, rowName, hasUpdate, hasDelete, hasView,
+        fnOnUpdate, fnOnDelete, fnOnView) {
         var funs = '';
         if (hasUpdate)
-            funs += _str.format('<button type="button" class="btn btn-link" onclick="_crud.onUpdate(\'{0}\')"><i class="ico-pen" title="{1}"></i></button>', key, _BR.TipUpdate);
+            funs += _str.format('<button type="button" class="btn btn-link" onclick="{0}(\'{1}\')"><i class="ico-pen" title="{2}"></i></button>', ((fnOnUpdate == null) ? '_crud.onUpdate' : fnOnUpdate), key, _BR.TipUpdate);
         if (hasDelete)
-            funs += _str.format('<button type="button" class="btn btn-link" onclick="_crud.onDelete(\'{0}\',\'{1}\')"><i class="ico-delete" title="{2}"></i></button>', key, rowName, _BR.TipDelete);
+            funs += _str.format('<button type="button" class="btn btn-link" onclick="_crud.onDelete(\'{1}\',\'{2}\')"><i class="ico-delete" title="{3}"></i></button>', ((fnOnDelete == null) ? '_crud.onDelete' : fnOnDelete), key, rowName, _BR.TipDelete);
         if (hasView)
-            funs += _str.format('<button type="button" class="btn btn-link" onclick="_crud.onView(\'{0}\')"><i class="ico-eye" title="{1}"></i></button>', key, _BR.TipView);
-
+            funs += _str.format('<button type="button" class="btn btn-link" onclick="_crud.onView(\'{1}\')"><i class="ico-eye" title="{2}"></i></button>', ((fnOnView == null) ? '_crud.onView' : fnOnView), key, _BR.TipView);
         return funs;
     },
     //=== jQuery datatables end ===    
@@ -464,11 +469,11 @@ var _crud = {
 
     //initial forms(recursive)
     initForm: function (edit) {
-        if (edit.form == null)
+        if (edit.eform == null)
             return;
 
-        _idate.init('', edit.form);  //init 日期欄位(所有欄位)
-        _valid.init(edit.form);
+        _idate.init('', edit.eform);  //init 日期欄位(所有欄位)
+        _valid.init(edit.eform);
         var childLen = _crud.getEditChildLen(edit);
         for (var i = 0; i < childLen; i++)
             _crud.initForm(_crud.getEditChild(edit, i));
@@ -477,24 +482,8 @@ var _crud = {
     /**
      * get master edit form
      */
-    getForm0: function () {
-        return _me.edit0.form;
-    },
-
-    //=== event start ===
-    /**
-     * 展開查詢畫面的額外欄位
-     */ 
-    onFind2: function () {
-        //$('.xg-find-form').slideToggle();
-        var find2 = _me.rform2;
-        if (find2 == null)
-            return;
-        else if (_obj.isShow(find2))
-            _form.hideShow([find2]);
-        else
-            _form.hideShow(null, [find2]);
-
+    getEform0: function () {
+        return _me.edit0.eform;
     },
 
     /**
@@ -509,11 +498,48 @@ var _crud = {
     },
 
     /**
+     * change newDiv to active
+     * param newDiv {object} jquery object
+     */ 
+    swap: function (toRead) {
+        var oldDiv, newDiv;
+        if (toRead) {
+            oldDiv = _me.divEdit;
+            newDiv = _me.divRead;
+        } else {
+            oldDiv = _me.divRead;
+            newDiv = _me.divEdit;
+        }
+
+        if (_obj.isShow(oldDiv)) {
+            oldDiv.fadeToggle(200);
+            newDiv.fadeToggle(500);
+        }
+        _crud._afterSwap(toRead);
+    },
+
+    //=== event start ===
+    /**
      * onclick find rows
      */
     onFind: function () {
         var cond = _crud.getFindCond();
         _me.dt.find(cond);
+    },
+
+    /**
+     * expand find2 form
+     */
+    onFind2: function () {
+        //$('.xg-find-form').slideToggle();
+        var find2 = _me.rform2;
+        if (find2 == null)
+            return;
+        else if (_obj.isShow(find2))
+            _form.hideShow([find2]);
+        else
+            _form.hideShow(null, [find2]);
+
     },
 
     /**
@@ -535,11 +561,11 @@ var _crud = {
      * onclick Create button
      */
     onCreate: function () {
-        _me.key = '';
-        _crud.setEditStatus(_fun.FunC);
-        _prog.setPathCreate();
+        var fun = _fun.FunC;
+        _prog.setPath(fun);
+        _crud.setEditStatus(fun);
         _crud.resetForm(_me.edit0);
-        _form.swap(_me.divEdit);
+        _crud.swap(false);        
     },
 
     /**
@@ -558,7 +584,7 @@ var _crud = {
         _crud.getJsonAndSetMode(key, _fun.FunV);
     },
 
-    getJsonAndSetMode: function (key, fun) {
+    getJsonAndSetMode: function (key, funType) {
         if (_str.isEmpty(key)) {
             _log.error('error: key is empty !');
             return;
@@ -566,37 +592,14 @@ var _crud = {
 
         //_crud.toUpdateMode(key);
         _ajax.getJson('GetJson', { key: key }, function (data) {
-            //_me.nowRow = data;
-            _crud.loadJson(data);
-
             //to edit(U/V) mode
-            _me.key = key;
-            _prog.setPathUpdate();
-            _crud.setEditStatus(fun);
-            _form.swap(_me.divEdit);
-
-            /*
-            //trigger custom function if any
-            if ($.isFunction(_me._ueOnUpdate)){
-                _me._ueOnUpdate(data);
-            }
-            */
+            //_me.key = key;
+            _prog.setPath(funType);
+            _crud.setEditStatus(funType);
+            _crud.swap(false);
+            _crud.loadJson(data);
         });
     },
-
-    /**
-     * to edit(U/V) mode
-     */
-    /*
-    setModeAndShow: function (mode, key) {
-        _me.key = key;
-        _crud.setEditStatus(mode);
-        //_me.isNew = false;
-        //_me.divReadTool.hide();
-        _prog.setPathUpdate();
-        _form.swap(_me.divEdit);
-    },
-    */
 
     //set edit form status
     //fun: C,U,V
@@ -632,7 +635,7 @@ var _crud = {
 
     /**
      * load row(include childs) into UI
-     * will call ufAfterLoadJson() 
+     * will call fnAfterLoadJson() 
      */
     loadJson: function (json) {
         //load master(single) row
@@ -647,9 +650,9 @@ var _crud = {
             edit2.loadJson(_crud.getChildJson(json, i));
         }
 
-        //call ufAfterLoadJson() if existed
-        if (_fun.notNull(edit.ufAfterLoadJson))
-            edit.ufAfterLoadJson(json);
+        //call fnAfterLoadJson() if existed
+        if (_fun.notNull(edit.fnAfterLoadJson))
+            edit.fnAfterLoadJson(json);
     },
 
     /**
@@ -676,7 +679,7 @@ var _crud = {
     */
 
     /**
-     * has upload file or not
+     * check has upload file or not
      */
     hasFile: function () {
         var edit = _me.edit0;
@@ -704,7 +707,7 @@ var _crud = {
         var edit0 = _me.edit0;
         var row = edit0.getUpdRow();
         var key = edit0.getKey();
-        var isNew = edit0.isNewRow();
+        //var isNew = edit0.isNewRow();
 
         //file for master edit
         var fileJson = {};
@@ -721,11 +724,11 @@ var _crud = {
 
             //file
             if (edit2.hasFile) {
-                var fileJson2 = edit2.dataAddFiles(levelStr + i, formData); //upload files
+                var fileJson2 = edit2.dataAddFiles(levelStr + i, formData, edit2.rowsBox); //upload files
                 _json.copy(fileJson2, fileJson);
             }
 
-            var childJson = edit2.getUpdJson(key);
+            var childJson = edit2.getUpdJsonByCrud(key);
             if (childJson == null)
                 continue;
 
@@ -758,19 +761,6 @@ var _crud = {
         return data;
     },
 
-    /*
-    //get updated json(has _rows, _childs, _deletes) for EditMany.js
-    //only read first level child, not recursive
-    getChildUpdJson: function (upKey, levelStr, formData, edit) {
-
-        //file
-        if (edit.hasFile)
-            edit.dataAddFiles(levelStr, formData); //upload files
-
-        return edit.getUpdJson(upKey);
-    },
-    */
-
     //傳入edit
     getEditChildLen: function (edit) {
         var fid = _crud.Childs;
@@ -790,10 +780,10 @@ var _crud = {
 
     //get child json
     getChildJson: function (upJson, childIdx) {
-        var fid = _crud.Childs;
-        return (upJson[fid] == null || upJson[fid].length <= childIdx)
+        var childs = _crud.Childs;
+        return (upJson[childs] == null || upJson[childs].length <= childIdx)
             ? null
-            : upJson[fid][childIdx];
+            : upJson[childs][childIdx];
     },
 
     //get child json rows
@@ -803,8 +793,11 @@ var _crud = {
     },
 
     /**
-     * 設定 child rows
-     * return child object
+     * set child rows
+     * param upRow {json}
+     * param childIdx {int}
+     * param rows {jsons}
+     * return {json} child object
      */ 
     setChildRows: function (upRow, childIdx, rows) {
         var fid = _crud.Childs;
@@ -825,7 +818,7 @@ var _crud = {
      */ 
     validAll: function () {
         var edit = _me.edit0;
-        if (!edit.form.valid())
+        if (!edit.eform.valid())
             return false;
 
         var childLen = _crud.getEditChildLen(edit);
@@ -862,46 +855,6 @@ var _crud = {
     */
 
     /**
-     * get saving row, 只讀取master table跟第一層child table
-     * formData {FormData} (optional) 有上傳檔案時必須在外面宣告此變數, 再傳入
-     * return {json}
-     */
-    /*
-    getSaveJson: function (formData) {
-        //var isNew = (_str.isEmpty(_me.key));
-        var edit = _me.edit0;
-        var isNew = edit.isNewRow();
-        var row = isNew ? edit.getRow() : edit.getUpdRow();   //saving row
-        //var deletes = [];
-        //var formData = new FormData();  //for upload files if need   
-        var childs = [];
-        var childLen = _crud.getEditChildLen(edit);
-        var hasChild = false;
-        for (var i = 0; i < childLen; i++) {
-            //updated rows & files
-            var edit2 = _crud.getEditChild(edit, i);
-            if (edit2.hasFile)
-                edit2.dataAddFiles(formData); //加入上傳檔案(多個)
-
-            var child = {
-                _rows: edit2.getUpdRows(),
-                _deletes: edit2.getDeletedRows(),
-            };
-            if (child._rows != null || child._deletes != null) {
-                hasChild = true;
-                childs[i] = child;
-            }
-        }
-        if (hasChild) {
-            if (row == null)
-                row = {};
-            row._childs = childs;
-        }
-        return row;
-    },
-    */
-
-    /**
      * on click save, 有上傳檔案時, 後端參數名稱固定為T(n)+FieldName
      * 傳送到後端的資料包含以下欄位:  
      *   key, row(包含_childs, _deletes, _fileNo), files
@@ -913,10 +866,10 @@ var _crud = {
             return;
         }
 
-        //call ufWhenSave if existed
+        //call fnWhenSave if existed
         var edit0 = _me.edit0;
-        if (_fun.notNull(edit0.ufWhenSave)) {
-            var error = edit0.ufWhenSave();
+        if (_fun.notNull(edit0.fnWhenSave)) {
+            var error = edit0.fnWhenSave();
             if (error != '') {
                 _tool.msg(error);
                 return;
@@ -926,13 +879,12 @@ var _crud = {
         //debugger;
         //get saving row
         var formData = new FormData();  //for upload files if need
-        var fileJson = {};
-        var row = _crud.getUpdJson(formData, fileJson);
+        var row = _crud.getUpdJson(formData);
 
         //temp add
         //return;
 
-        //save, 固定呼叫 Save action
+        //save rows, call backend Save action
         var isNew = edit0.isNewRow();
         var action = isNew ? 'Create' : 'Update';
         var data = null;
@@ -1005,9 +957,9 @@ var _crud = {
      */
     afterSave: function (data) {
         //debugger;
-        //call ufWhenSave if need
-        if (_fun.notNull(_me.edit0.ufAfterSave))
-            _me.edit0.ufAfterSave();
+        //call fnAfterSave if need
+        if (_fun.notNull(_me.edit0.fnAfterSave))
+            _me.edit0.fnAfterSave();
 
         //save no rows
         if (data.Value === '0') {
@@ -1030,7 +982,7 @@ var _crud = {
      * param fid {string} fid
      */
     onCheckAll: function (me, box, fid) {
-        _icheck.setF(_fun.getDataFid(fid) + ':not(:disabled)', _icheck.checkedO($(me)), box);
+        _icheck.setF(_fun.getFidFilter(fid) + ':not(:disabled)', _icheck.checkedO($(me)), box);
     },
 
     /**
@@ -1089,25 +1041,9 @@ var _crud = {
     //=== event end ===
 
     /**
-     * ??
-     * key array to string(加上table & row分隔符號, two dimension)
-     * keys {string[]} key list
-     * return {string} 字串加上table & row分隔符號
-     */
-    /*
-    _keysToStr: function (keys) {
-        var strs = [];
-        for (var i = 0; i < keys.length; i++) {
-            strs[i] = (keys[i].length === 0)
-                ? ''
-                : keys[i].join(_fun.RowSep);
-        }
-        return strs.join(_fun.TableSep);
-    },
-    */
-
-    //=== set mode start ===
-    //reset form(recursive)
+     * reset form (recursive)
+     * param edit {EditOne}
+     */ 
     resetForm: function (edit) {
         //reset this
         edit.reset();
@@ -1116,51 +1052,22 @@ var _crud = {
         var childLen = _crud.getEditChildLen(edit);
         for (var i = 0; i < childLen; i++) {
             var edit2 = _crud.getEditChild(edit, i);
-            edit2.loadJson();
+            edit2.reset();
         }
     },
 
     /**
-     * 回到新增模式
-     */
-    /*
-    toCreateMode: function () {
-        //_me.isNew = true;
-        _me.key = '';
-        _crud.setEditStatus(_fun.FunC);
-        //_me.divReadTool.hide();
-        _prog.setPathCreate();
-        _crud.resetForm(_me.edit0);
-        _form.swap(_me.divEdit);
-    },
-    */
-
-    /**
-     * 回到修改模式
-     * key {string} row key
-     */
-    /*
-    toUpdateMode: function (key) {
-        _crud.setModeAndShow(_fun.FunU, key);
-    },
-    */
-
-    /**
-     * to view mode
-     */
-    /*
-    toViewMode: function (key) {
-        _crud.setModeAndShow(_fun.FunV, key);
-    },
-    */
-
-    /**
-     * 回到列表模式
+     * back to list form
      */
     toReadMode: function () {
         //_me.divReadTool.show();
         _prog.resetPath();
-        _form.swap(_me.divRead);
+        _crud.swap(true);
+    },
+
+    _afterSwap: function (toRead) {
+        if (_me.fnAfterSwap !== undefined)
+            _me.fnAfterSwap(toRead);
     },
 
     /**
@@ -1169,8 +1076,6 @@ var _crud = {
     isEditMode: function () {
         return (_me.nowFun !== _fun.FunV);
     },
-
-    //=== set mode end ===    
 
 };//class
 
@@ -1269,6 +1174,7 @@ var _edit = {
 
     /**
      * set file related variables: fileFids, fileLen, hasFile
+     * called by EditOne/EditMany init()
      * param me {edit} EditOne/EditMany variables
      * param box {object} form or row object
      * return void
@@ -1420,8 +1326,11 @@ var _form = {
         return JSON.stringify(_form.toJson(form));
     },
 
-    //read json into form (container object)
-    //form: form or div object
+    /**
+     * load json row into form UI (container object)
+     * param form {object} form or box object
+     * param row {json}
+     */
     loadRow: function (form, row) {
         for (var key in row)
             _input.set(key, row[key], form);
@@ -1450,7 +1359,7 @@ var _form = {
         //get ids
         //var ids = [];
         var ok = true;
-        form.find('.' + _fun.xdRequired).each(function () {
+        form.find('.' + _fun.XdRequired).each(function () {
             var me = $(this);
             if (_str.isEmpty(_input.getO(me))) {
                 ok = false;
@@ -1683,25 +1592,6 @@ var _form = {
         }
     },
 
-    //切換頁面為 xg-active
-    //div: jquery object
-    swap: function (div) {
-        //debugger;
-        var active = $('.xg-swap.xg-active');
-        if (div === active)
-            return;
-
-        //效果處理
-        active.fadeOut(200, function () {
-            //debugger;
-            active.removeClass('xg-active');
-
-            div.addClass('xg-active');
-            div.fadeIn(500);
-        });
-        //e.preventDefault();
-    },
-
     zz_reset: function (form) {
         //var box = $('#' + form);
         //文字欄位
@@ -1718,37 +1608,30 @@ var _formData = {
 
 //var RB = null;  //resource base
 var _fun = {
-    //errTail: '_err',
-    //xgError: 'xg-error',
-    locale: 'zh-TW',
 
     //=== constant start(大camel) ===
-    //DataKey: '_key',            //編輯資料列的key值欄位id, 空白表示新增
+    Fid: 'fid',            //data-fid
 
     //input field error validation, need match server side _Web.cs
-    jsPath: '../Scripts/',      //js path for load
+    //jsPath: '../Scripts/',      //js path for load
     //errTail: '_err',            //error label 欄位id後面會加上這個字元
-    xiBorder: 'xi-border',           //input border class
+    XiBorder: 'xi-border',           //input border class
     errCls: 'xg-error',           //欄位驗証錯誤時會加上這個 class name
     errLabCls: 'xg-error-label',     //error label 的 class name
     //errBoxCls: 'xg-errorbox', //??_box欄位驗証錯誤時會加上這個 class name
-    xdRequired: 'xd-required',
+    XdRequired: 'xd-required',
 
     //constant for mapping to backend
-    funC: 'C',     //create
-    funR: 'R',     //read
-    funU: 'U',     //update
-    funD: 'D',     //for input file
-    funV: 'V',     //view row
-
-    //value seperator, must match to backend !!
-    //TableSep: ':',
-    //RowSep: ';',
-    //ColSep: ',',
+    FunC: 'C',     //create
+    FunR: 'R',     //read
+    FunU: 'U',     //update
+    FunD: 'D',     //delete, for input file
+    FunV: 'V',     //view row
     //=== constant end ===
 
 
     //變數
+    locale: 'zh-TW',
     maxFileSize: 50971520,  //上傳檔案限制50M
     //localeCode: 'zh-TW',
 
@@ -1768,14 +1651,11 @@ var _fun = {
     /**
      * get data-fid string, ex: [data-fid=XXX]
      * param fid {stirng} field id
-     * param square {bool} (true)has square or not
+     * param square {bool} (false)has square or not
      * return {string}
      */
-    getDataFid: function (fid, square) {
-        var data = 'data-fid=' + fid;
-        if (square === undefined || square === true)
-            data += '[' + data + ']';
-        return data;
+    getFidFilter: function (fid) {
+        return '[data-fid=' + fid + ']';
     },
 
     /*
@@ -1854,7 +1734,6 @@ var _fun = {
        me : this component
        fid: field id 
        value: field value
-       onClickFn: (optional) callback function
      */
     //onClickCheckMulti: function (me, fid, value, separator, onClickFn) {
     zz_onChangeMultiCheck: function (me, fid) {
@@ -1941,7 +1820,12 @@ var _helper = {
 //must loaded first, or will got error !!
 var _ibase = {
 
-    //get value by fid
+    /**
+     * get value by fid
+     * param fid {string}
+     * param box {object}
+     * return {string}
+     */ 
     get: function (fid, box) {
         return _ibase.getO(_obj.get(fid, box));
     },
@@ -2302,7 +2186,7 @@ var _idate = $.extend({}, _ibase, {
     render: function (dataId, value, required, extClass) {
         extClass = extClass || '';
         if (required === true)
-            extClass += ' ' + _fun.xdRequired;
+            extClass += ' ' + _fun.XdRequired;
         //span 要放在外面, 跟 XiDateHelper 不同 !!
         return _str.format("" +
             "<div class='input-group date xg-date' data-provide='datepicker'>" +
@@ -3011,7 +2895,6 @@ var _iradio = $.extend({}, _ibase, {
      @param {string} extProp (optional) extProp
      @return {string} html string.
     */
-    //render: function (isId, id, label, checked, editable, value, onClickFn) {
     render: function (fid, label, checked, value, editable, extClass, extProp) {
         var html = "" +
             "<label class='xg-radio {0}'>" +
@@ -3048,7 +2931,7 @@ var _iread = {
 
     //value by fid
     get: function (fid, form) {
-        return _iread.getO(_obj.getD(fid, form));   //use data-fid
+        return _iread.getO(_obj.get(fid, form));   //use data-fid
     },
     //value by filter
     getF: function (filter, form) {
@@ -3058,9 +2941,8 @@ var _iread = {
     getO: function (obj) {
         return obj.text();
     },
-
     set: function (fid, value, form) {
-        _iread.setO(_obj.getD(fid, form), value);   //use data-fid
+        _iread.setO(_obj.get(fid, form), value);   //use data-fid
     },
     setF: function (filter, value, form) {
         _iread.setO(_obj.getF(filter, form), value)
@@ -3069,7 +2951,7 @@ var _iread = {
         obj.text(value);
     },
 
-};
+}; //class
 
 //一般的 select option 
 var _iselect = $.extend({}, _ibase, {
@@ -3593,7 +3475,7 @@ var _obj = {
      * get object by name for input field
      */
     get: function (val, box) {
-        return _obj.getF('[data-fid=' + val + ']', box);
+        return _obj.getF(_fun.getFidFilter(val), box);
     },
 
     /**
@@ -3798,14 +3680,18 @@ var _prog = {
         _prog.me.text(_prog.oriPath);
     },
 
-    //for crud, set path for create
-    setPathCreate: function () {
-        _prog.me.text(_prog.oriPath + '-' + _BR.Create);
+    /**
+     * set program path
+     * param fun {string} fun mode
+     */
+    setPath: function (fun) {
+        var name = (fun == _fun.FunC) ? _BR.Create :
+            (fun == _fun.FunU) ? _BR.Update :
+            (fun == _fun.FunV) ? _BR.View :
+            '??';
+        _prog.me.text(_prog.oriPath + '-' + name);
     },
-    //for crud, set path for update
-    setPathUpdate: function () {
-        _prog.me.text(_prog.oriPath + '-' + _BR.Update);
-    },
+
 };
 
 //https://github.com/davidshimjs/qrcodejs
@@ -4131,7 +4017,7 @@ var _valid = {
 
     //get input box for validate
     getInputBox: function (element) {
-        return $(element).closest('.' + _fun.xiBorder);
+        return $(element).closest('.' + _fun.XiBorder);
     },
 
     reInit: function (fm, inputConfig) {
@@ -4401,83 +4287,53 @@ function Datatable(selector, url, dtConfig, findJson, fnOk, tbarHtml) {
     this.init(selector, url, dtConfig, fnOk, tbarHtml);
 
 } //class
-//多筆維護
-//處理沒有 child 的資料
-//called by _crud.js
-/*
- 一個 crud json 包含3個欄位: _rows, _deletes, _childs
-   _rows: 多筆資料, 包含資料異動和 "檔案上傳"
-   _deletes[]: 要刪除的Id array 字串(後端才能decode!!), 只有一個 id欄位(必須使用json格式才能傳到後端 !!)
-   _childs  
- 處理編輯畫面的多筆資料, 
-   1.產生的資料(變數)包含3個欄位:
-     form: form container
-     rows[]: 表示要異動的資料 array, 欄位為欄位名稱, 其中 :
-       //_new : 1/0
-       //_key : 主key值, from data-key, for刪除only
-       _fileNo : 欄位對應到要上傳的檔案序號(>=0), -1表示無檔案, -2表示要刪除檔案
- 注意:
-   //1.tr要放一個checkbox欄位 for 刪除資料
-   //2.tr最多只能有一個上傳檔案欄位(也可以沒有)
-   3.系統自動填入tr 2個屬性 :
-     //(a).data-new: 1/0
-     //(b).data-key: 單欄位主key
-   4.異動欄位設定屬性 : name='xxx', xxx為欄位名稱
-   //5.刪除按鈕固定呼叫 : this.onClickDeleteRows(_me.divXXX, _me.XXX)
-   ??5.刪除按鈕固定呼叫 : this.onClickDeleteRows(_me.multiXXX)
-   ??6.檔案欄位固定內容 : <input type='file' onchange='this.onChangeFile(this)'>
-   ??7.在後端要自行處理上傳檔名的問題
-   ??8.刪除多table多筆資料時, 分隔符號為: table(:), row(;), col(,), 後端必須同時配合!!
-   ??9.多筆資料的上傳檔案暫時呼叫 _xp.tdFile(url)
-
- * 注意:
- *   保留的自訂函數:
- *     //void ufAfterLoadJson(rowJson)
- *     //bool ufWhenSave():
- *     //void ufAfterSave(): 在 _crud.js呼叫
-
-   //如果有child, 則新增時要設定 id=new index
-   儲存前要設定 data fkeyFid(base 0, for 新增)
- */
-
 /**
- * constructor
+ * multiple edit forms
+ * notice:
+ *   1.set data-fkeyFid when save
+ *   
  * param kid {string} pkey field id(single key)
- * param formId {string} form row container id
+ * param eformId {string} edit form id
  *   if not empty, system will load UI & prepare save rows
- *   and rows container tag is fixed to 'tbody'
- * param tplRowId {string} row template id
+ *     and rows container tag is fixed to 'tbody'
+ *   if empty, you could write below custom functions:
+ *     1.void fnLoadJson(json): necessary
+ *     2.json fnGetUpdJson(upKey): necessary
+ *     3.bool fnValid(): optional
+ * param tplRowId {string} row template id, required
  * param sortFid {string} (optional) sort fid for sorting function
+ * param rowFilter {string} (optional 'tr') filter for find row object
+ *   1.inside element -> row(onDeleteRow), 2.rowsBox -> row(getUpdRows)
+ * return {EditMany}
  */
-function EditMany(kid, formId, tplRowId, sortFid) {
+function EditMany(kid, eformId, tplRowId, rowFilter, sortFid) {
 
-    //新增row時, 同時設定以下2個row box 欄位, save時, 會傳入後端
-    //1.row index, 
-    //this.DataIndex = '_index';
-    //2.對應上層資料的key值, 如上層為新增, 則設定為 DataIndex的值(前面加負號, 做為區別)
-    //this.DataMapFid = '_mapfid';
-
+    /**
+     * initial, call by this
+     */ 
     this.init = function () {
 
         //constant
         this.DataFkeyFid = '_fkeyfid';  //data field for fkey fid
-        this.RowTag = 'tr';             //row tag
 
         this.kid = kid;
         this.tplRow = $('#' + tplRowId).html();
+        this.sortFid = sortFid;
+        this.hasRowFilter = !_str.isEmpty(rowFilter);
+        this.rowFilter = rowFilter;
 
         var rowObj = $(this.tplRow);
         _edit.setFidTypeVars(this, rowObj);
         _edit.setFileVars(this, rowObj);
 
-        this.hasForm = !_str.isEmpty(formId);
-        if (this.hasForm) {
-            this.form = $('#' + formId);     //form object
-            this.rowsBox = this.form.find('tbody'); //use tbody
+        //has edit form or not
+        this.hasEform = !_str.isEmpty(eformId);
+        if (this.hasEform) {
+            this.eform = $('#' + eformId);     //edit form object
+            this.rowsBox = this.eform.find('tbody'); //use tbody(in table)
         }
 
-        this.sortFid = sortFid;
-        this.deletedRows = [];  //deleted key array
+        this.deletedRows = [];  //deleted key string array
         this.newIndex = 0;      //new row serial no
     };
 
@@ -4493,124 +4349,97 @@ function EditMany(kid, formId, tplRowId, sortFid) {
 
     /**
      * reset edit form
+     * param rowsBox {object} optional
      */
-    this.resetVar = function () {
-        //this.loadJson();
-        //if (!this.hasForm)
-        //    return;
+    this.reset = function (rowsBox) {
+        rowsBox = this.getRowsBox(rowsBox);
+        if (rowsBox != null)
+            rowsBox.empty();   //empty rows ui first
 
-        //rowsBox.empty();   //empty rows ui first
+        //reset variables
         this.newIndex = 0;
         this.deletedRows = [];
     };
 
     /**
      * load this json rows into UI
-     * param {jarray} rows
+     * param json {json} 
      */
     this.loadJson = function (json) {
-        //reset first
-        this.resetVar();
-
-        //if (json == null || json[_crud.Rows] == null)
-        //    return;
-
-        if (this.hasForm) {
-            var rows = (json == null || json[_crud.Rows] == null) ? null : json[_crud.Rows];
+        if (this.hasEform) {
+            var rows = (json == null || json[_crud.Rows] == null)
+                ? null : json[_crud.Rows];
             this.loadRows(this.rowsBox, rows);
         } else {
+            //raise error if no function
             this.fnLoadJson(json);
         }
     };
 
     /**
-     * load this json rows into UI
-     * param {jarray} rows
+     * load row by row box(container), also set old value
+     * param rowBox {object}
+     * param row {json}
+     * param index {int}
      */
-    /*
-    this.loadRows = function (rows) {
-        //reset first
-        this.reset();
-
-        if (this.hasForm)
-            this.loadRows(this.rowsBox, rows);
-        else
-            this.fnLoadJson(rows);
-    };
-    */
-
-    //load row by row box(container)
-    this.loadRow = function (box, row, index) {
+    this.loadRow = function (rowBox, row, index) {
         var form = $(Mustache.render(this.tplRow, { Index: index }));
-        _form.loadRow(form, row);   //使用 name
+        _form.loadRow(form, row);   //use name field
 
         //set old value for each field
-        //var fidLen = fidTypes.length;
         for (var i = 0; i < this.fidTypeLen; i = i + 2) {
             fid = this.fidTypes[i];
             var obj = _obj.get(fid, form);
             obj.data(_edit.DataOld, row[fid]);
         }
 
-        box.append(form);
+        rowBox.append(form);
     };
 
     /**
-     * load rows to form UI
-     * param rowsBox {object} rows box container
+     * load rows to form UI, also set old values !!
+     * param rowsBox {object} rows box object
      * param rows {jsons}
      */ 
-    this.loadRows = function (rowsBox, rows) {
-        //reset first
-        rowsBox.empty();
+    this.loadRows = function (rowsBox, rows, reset) {
+        //reset if need
+        if (reset === undefined)
+            reset = true;
+        if (reset)
+            this.reset(rowsBox);
 
         //var rows = json._rows;
         var rowLen = (rows == null) ? 0 : rows.length;
         if (rowLen === 0)
             return;
 
-        //render this rows
-        //var fidTypeLen = fidTypes.length;
+        //render rows
         for (var i = 0; i < rowLen; i++) {
             var row = rows[i];
-            var obj = $(Mustache.render(this.tplRow, row));
-            //obj.data(this.DataIndex, i);    //set row index
+            var box = $(Mustache.render(this.tplRow, row));
+            //box.data(this.DataIndex, i);    //set row index
 
             //set old value for each field
             for (var j = 0; j < this.fidTypeLen; j = j + 2) {
                 fid = this.fidTypes[j];
-                var obj2 = _obj.get(fid, obj);
+                var obj2 = _obj.get(fid, box);
                 _edit.setOld(obj2, row[fid]);
             }
 
-            _form.loadRow(obj, row);
-            /*
-            //設定 checkbox, radio status(後端無法設定) !!
-            //要加入 checkbox 欄位, 只會讀取有name的欄位值
-            obj.find(':checkbox').each(function () {
-                var item = $(this);
-                var id = item.data('id');
-                if (id !== undefined && id.indexOf('-') < 0)
-                    _icheck.setO(item, row[id]);
-            });
+            //one row into UI
+            _form.loadRow(box, row);
 
-            //要加入 radio 欄位, 只會讀取有name的欄位值
-            obj.find(':radio').each(function () {
-                var item = $(this);
-                var id = item.data('id');
-                if (id !== undefined)
-                    _iradio.setO(item, row[id]);
-            });
-            */
-
-            obj.appendTo(rowsBox);
+            //into rows box
+            box.appendTo(rowsBox);
         }        
     };
 
+    /**
+     * validate form
+     */
     this.valid = function () {
-        return (this.hasForm)
-            ? this.form.valid()
-            : this.fnValid();
+        return (this.hasEform) ? this.eform.valid() :
+            (this.fnValid == null) ? true : this.fnValid();
     };
 
     /**
@@ -4639,59 +4468,82 @@ function EditMany(kid, formId, tplRowId, sortFid) {
         return row;
     };
 
-    /**
-     * get row box by inside object/element
-     * param obj {object/element} 
-     * return {object}
-     */
-    this.getRowBox = function (obj) {
-        return $(obj).closest(this.RowTag);
+    this.checkRowFilter = function () {
+        if (this.hasRowFilter)
+            return true;
+
+        _log.error('EditMany.js this.rowFilter is empty.');
+        return false;
     };
 
     /**
-     * get updated json
-     * param {upKey}
-     * return {json} different column only
+     * get row box by inside element/object
+     * param elm {element/object}
+     * return {object}
      */
-    this.getUpdJson = function (upKey) {
-        if (!this.hasForm)
-            return this.fnGetUpdJson();
+    this.elmToRowBox = function (elm) {
+        return this.checkRowFilter()
+            ? $(elm).closest(this.rowFilter)
+            : null;
+    };
 
+    /**
+     * get updated json, called by crud.js only !!
+     * param upKey {string}
+     * return {json} modified columns only
+     */
+    this.getUpdJsonByCrud = function (upKey) {
+        return (this.hasEform)
+            ? this.getUpdJson(upKey, this.rowsBox)
+            : this.fnGetUpdJson(upKey);
+    };
+
+    /**
+     * get updated json, called by crud.js only
+     * param upKey {string}
+     * param rowsBox {object}
+     * return {json} modified columns only
+     */
+    this.getUpdJson = function (upKey, rowsBox) {
+        rowsBox = this.getRowsBox(rowsBox);
         var json = {};
-        json[_crud.Rows] = this.getUpdRowsByArg(upKey, this.rowsBox);
+        json[_crud.Rows] = this.getUpdRows(upKey, rowsBox);
         json[_crud.Deletes] = this.getDeletedRows();
         return json;
     };
 
-    //是否為new key, parseInt(英數字) 會傳回int, 不可使用!!
+    /**
+     * check a new key or not, parseInt(ABC123) will get int, cannot use it!!
+     * param key {string}
+     */
     this.isNewKey = function (key) {
         return (key.length <= 3);
     };
 
     /**
-     * get updated rows(not include _childs, _deletes)
+     * (need this.rowFilter !!) get updated rows(not include _childs, _deletes)
      * will also set fkeyFid
-     * param rowsBox {object} rows container
-     * param trFilter {string} (optional) default to this.RowTag
-     * return {json} null if empty
+     * param rowsBox {object} (optional) rows container
+     * return {jsons} null if empty
      */ 
-    this.getUpdRowsByArg = function (upKey, rowsBox, trFilter) {
-        //rowsBox = rowsBox || this.rowsBox;
-        trFilter = trFilter || this.RowTag;
+    this.getUpdRows = function (upKey, rowsBox) {
+        if (!this.checkRowFilter())
+            return;
 
         //set sort field
-        this.setSort();
+        rowsBox = this.getRowsBox(rowsBox);
+        this.setSort(rowsBox);
 
         //debugger;
         var rows = [];  //return rows        
-        var me = this;  //先用變數接起來, 否則在 each() 裡面不能用 this
-        rowsBox.find(me.RowTag).each(function (idx, item) {
+        var me = this;  //this is not work inside each() !!
+        rowsBox.find(me.rowFilter).each(function (idx, item) {
             //add new row if empty key
             var tr = $(item);
             var key = _input.get(me.kid, tr);
             if (me.isNewKey(key)) {
                 var row2 = me.getRow(tr);
-                row2[me.DataFkeyFid] = upKey;   //無條件寫入這個欄位!!
+                row2[me.DataFkeyFid] = upKey;   //write anyway !!
                 rows.push(row2);
                 return;     //continue;
             }
@@ -4703,7 +4555,7 @@ function EditMany(kid, formId, tplRowId, sortFid) {
             var diff = false;
             var fid, ftype, value, obj;
             for (var j = 0; j < me.fidTypes.length; j = j + 2) {
-                //label 不取值
+                //label should ship !!
                 ftype = me.fidTypes[j + 1];
                 if (ftype === 'label')
                     continue;
@@ -4711,7 +4563,7 @@ function EditMany(kid, formId, tplRowId, sortFid) {
                 fid = me.fidTypes[j];
                 obj = _obj.get(fid, tr);
                 value = _input.getByType(obj, ftype, tr);
-                //如果使用完全比對, 字串和數字會不相等!!
+                //if totally compare, string is not equal to numeric !!
                 if (value != _edit.getOld(obj)) {
                     diffRow[fid] = value;
                     diff = true;
@@ -4743,50 +4595,41 @@ function EditMany(kid, formId, tplRowId, sortFid) {
             ? null : this.deletedRows.join();
     };    
 
-    //onclick addRow button
+    /**
+     * onclick addRow button
+     */
     this.onAddRow = function () {
         this.addRow();
     };
 
     /**
-     * 增加一筆資料
+     * add one row into UI
      * param {object} row(optional)
      * return {object} row jquery object(with UI)
      */
-    //this.addRow = function (upKey, row) {
-    this.addRow = function (row) {
-        if (!this.hasForm) {
-            _log.error('EditMany.js addRow() failed, hasForm is false.');
-            return null;
-        }
-
+    this.addRow = function (rowsBox, row) {
         row = row || {};
-        //row[this.DataIsNew] = isNew ? 1 : 0;
-        //var isNew = this.isNewRow(row);
-        //if (this.isNewRow(row))
-        //    row[this.kid] = ;
-        //if (this.oldRows == null)
-        //    this.oldRows = [];
-        //this.oldRows[this.oldRows.length] = row;
-
-        var obj = this.renderRow(row);
+        rowsBox = this.getRowsBox(rowsBox);
+        var obj = this.renderRow(rowsBox, row);
         this.boxSetNewId(obj);
         return obj;
     };
 
-    //user click deleteRow
+    /**
+     * onclick deleteRow
+     * param btn {element}
+     */
     this.onDeleteRow = function (btn) {        
-        //var trObj = $(btn).closest(this.RowTag);
-        var trObj = this.getRowBox(btn);
-        this.deleteRow(_itext.get(this.kid, trObj), trObj);
+        var box = this.elmToRowBox(btn);
+        this.deleteRow(_itext.get(this.kid, box), box);
     };
 
     /**
      * add deleted row & remove UI row
      * param key {string} row key
-     * param trObj {object} (optional) tr object
+     * param rowBox {object} (optional) row box object
      */ 
-    this.deleteRow = function (key, trObj) {
+    this.deleteRow = function (key, rowBox) {
         var rows = this.deletedRows;
         var found = false;
         var rowLen = rows.length;
@@ -4803,10 +4646,8 @@ function EditMany(kid, formId, tplRowId, sortFid) {
             rows[rowLen] = key;
 
         //remove UI row if need
-        //if (this.hasForm && trObj)
-        //this.rowsBox.remove(trObj);
-        if (_obj.isExist(trObj))
-            trObj.remove();
+        if (_obj.isExist(rowBox))
+            rowBox.remove();
     };
 
     /**
@@ -4814,7 +4655,7 @@ function EditMany(kid, formId, tplRowId, sortFid) {
      * param elm {element} link element
      */
     this.onViewImage = function (table, fid, elm) {
-        var key = this.getKey(this.getRowBox(elm));
+        var key = this.getKey(this.elmToRowBox(elm));
         if (this.isNewKey(key))
             _tool.msg(_BR.NewFileNotView);
         else
@@ -4822,35 +4663,37 @@ function EditMany(kid, formId, tplRowId, sortFid) {
     };
 
     /**
-     * render row by UI template
-     * return jquery object of row
+     * render row by UI template, called by addRow()
+     * param rowsBox {object}
+     * param row {json}
+     * return {object} row object
      */ 
-    this.renderRow = function (row) {
-        if (!this.hasForm)
-            return null;
-
+    this.renderRow = function (rowsBox, row) {
+        rowsBox = this.getRowsBox(rowsBox);
         var obj = $(Mustache.render(this.tplRow, row));
-        //obj.data(this.kid, row[this.kid]);
-        obj.appendTo(this.rowsBox);
+        _form.loadRow(obj, row);
+        obj.appendTo(rowsBox);
         return obj;
     };
 
     /**
-     * formData add upload files
+     * (need this.rowFilter !!) formData add upload files
      * param levelStr {string}
      * param data {FormData}
      * return {json} file json
      */ 
-    this.dataAddFiles = function (levelStr, data) {
+    this.dataAddFiles = function (levelStr, data, rowsBox) {
         if (!this.hasFile)
             return null;
 
-        //debugger;
-        //var form = this.form;
+        if (!this.checkRowFilter())
+            return null;
+
+        rowsBox = this.getRowsBox(rowsBox);
         var me = this;
         var fileJson = {};
         var fileIdx = {};   //fileFid map index
-        this.rowsBox.find(me.RowTag).each(function (index, item) {
+        rowsBox.find(me.rowFilter).each(function (index, item) {
             var tr = $(item);
             for (var i = 0; i < me.fileLen; i++) {
                 var fid = me.fileFids[i];
@@ -4866,142 +4709,21 @@ function EditMany(kid, formId, tplRowId, sortFid) {
         return fileJson;
     };
 
-    //=== 以下待修正 ===
     /**
-     @description 2個功能: 
-       1.FormDate 增加上傳檔案
-       2.累加多筆資料
-     如果多筆資料有上傳檔案, 而且是多主key, 則要在後端自行處理上傳檔案名稱的問題 !!
-     注意: radio 有2種情形(true/false):
-         
-     @param {object} data FormData(在外面宣告), 把上傳檔案加到這個變數裡面
-     @param {array} toRows 來源多筆資料, [0]為單筆(已存在), [1]以後為多筆(開始寫入)
-     @param src: container
-     @param oneRadio: 
-       1.false: row有自己的 radio group(default): (此時id & name不同):
-         用id 找name, 取name有checked的項目取值, 再寫回 id欄位
-       2.true: rows共用一個 radio group: (此時id & name相同):
-     //kid: key id欄位名稱, 把key值寫到這個欄位, 如果沒有上傳檔案, 則不需要
-     //setRowsFiles: function (data, src, src, kid) {
-     //@return 資料筆數
-    */
-    //addFilesAndRows: function (data, toRows, src) {
-    //??
-    /*
-    this.dataAddRows = function (data, toRows, src) {
-        //if (oneRadio === undefined)
-        //    oneRadio = false;
-        var fileLen = data.getAll('files').length;    //目前上傳檔案數量
-        var rows = [];      //要異動的多筆資料
-        var fields = [];    //obj. id, type欄位
-        src.box.find('tr').each(function (index, item) {
-            //寫入欄位資訊 fields[id,type] (只寫第一次)
-            var tr = $(item);
-            if (fields.length === 0) {
-                //尋找所有 data-id 的欄位
-                tr.find("[data-id]").each(function (i2, item2) {
-                    var obj2 = $(item2);
-                    fields[i2] = {
-                        //obj: obj2,
-                        id: obj2.data('id'),
-                        type: _input.getType(obj2),
-                    };
-                });
-            }
-
-            //檔案加入 formData, 欄位名稱(後端變數名稱)為 files
-            var fileNo = -1;    //初始化, -1表示無檔案
-            var files = tr.find(':file');
-            if (files.length > 0) {
-                files = files[0].files;
-                if (files.length > 0) {
-                    data.append('files', files[0]);
-                    fileNo = fileLen;
-                    fileLen++;
-                }
-            }
-
-            //寫入異動資料
-            //row為多筆的一筆資料, 保留欄位的名稱加底線
-            var row = { _fileNo: fileNo };  //對應要上傳的檔案位置序號, -1表示無檔案
-            //if (kid !== undefined && kid != '')
-            //    row[kid] = tr.data('key');      //寫入key值
-            row._fun = tr.data(this.dataFun);          //row fun??
-            row._key = tr.data(this.DataKey);          //row key
-            for (var i = 0; i < fields.length; i++) {
-                var field = fields[i];
-                var value = '';
-                var obj = tr.find('[data-id=' + field.id + ']');
-                //考慮多筆的 radio 欄位是否為共用!!
-                row[field.id] = (field.type == 'radio')
-                    ? (src.oneRadio)
-                        ? _iradio.getO(obj, src.box)
-                        : _iradio.get(obj.attr('name'), src.box)
-                    : _input.getByType(obj, field.type, tr);
-            }
-            rows.push(row);
-        });
-
-        //陣列加一
-        toRows[toRows.length] = rows;   //寫入外部 rows
-        src.rows = rows;    //同時寫入自己的rows !!
-        //return rows;
-    };
-
-    //write row key info from jquery object to model
-    this.keyObjToModel = function (obj, model) {
-        model[this.DataIsNew] = obj.data(this.DataIsNew);
-        model[this.DataKey] = obj.data(this.DataKey);
-    };
-    //write row key info from model to jquery object
-    this.keyModelToObj = function (model, obj) {
-        obj.data(this.DataIsNew, model[this.DataIsNew]);
-        obj.data(this.DataKey, model[this.DataKey]);
-    };
-    this.keyModelToModel = function (from, to) {
-        if (!_str.isEmpty(from[this.DataIsNew]))
-            to[this.DataIsNew] = from[this.DataIsNew];
-        if (!_str.isEmpty(from[this.DataKey]))
-            to[this.DataKey] = from[this.DataKey];
-    };
-    this.keyValuesToObj = function (isNew, key, obj) {
-        obj.data(this.DataIsNew, isNew);
-        obj.data(this.DataKey, key);
-    };
-    this.keyValuesToModel = function (isNew, key, model) {
-        model[this.DataIsNew] = isNew;
-        model[this.DataKey] = key;
-    };
-    */
-
-    /**
-    * @param {string} rows checkbox data-id value
-    */
-    /*
-    this.zz_boxLoadData = function (rows) {
-        var len = (rows == null) ? 0 : rows.length;
-
-        //empty rows ui first
-        this.rowsBox.empty();
-
-        //render rows
-        for (var i = 0; i < len; i++)
-            this.rowsBox.append(Mustache.render(this.tplRow, rows[i]));
-
-        //keep old column values
-
-        //reset
-        //this.oldRows = rows;
-        this.newIndex = 0;
-        this.deletedRows = [];
-    };    
-    */
-
+     * row set fkey value
+     * param row {json}
+     * param fkeyFid {string}
+     */
     this.rowSetFkeyFid = function (row, fkeyFid) {
         if (row != null && this.isNewRow(row))
             row[this.DataFkeyFid] = fkeyFid;
     };
 
+    /**
+     * rows set fkey value
+     * param rows {jsons}
+     * param fkeyFid {string}
+     */
     this.rowsSetFkeyFid = function (rows, fkeyFid) {
         if (rows != null) {
             for (var i = 0; i < rows.length; i++) {
@@ -5012,31 +4734,43 @@ function EditMany(kid, formId, tplRowId, sortFid) {
         }
     };
 
-    /*
-    this.boxSetMapId = function (box, fkeyFid) {
-        box.data(this.DataFkeyFid, fkeyFid);
-    };
-    */
-
-    //set new id for box
+    /**
+     * set new id by row box
+     * param box {object} row box
+     * return {int} new key index
+     */
     this.boxSetNewId = function (box) {
         this.newIndex++;
         _itext.set(this.kid, this.newIndex, box);
+        return this.newIndex;
     };
 
-    //set sort field
-    this.setSort = function () {
+    /**
+     * set sort field if need
+     * param rowsBox {object}
+     */
+    this.setSort = function (rowsBox) {
         var sortFid = this.sortFid;
-        if (!_str.isEmpty(sortFid)) {
-            this.rowsBox.find(this.RowTag).each(function (i, item) {
-                //this did not work in this loop !!
-                _itext.set(sortFid, i, $(item));
-            });
-        }
+        if (_str.isEmpty(sortFid))
+            return;
+
+        rowsBox = this.getRowsBox(rowsBox);
+        rowsBox.find(_fun.getFidFilter(sortFid)).each(function (i, item) {
+            //this did not work in this loop !!
+            _itext.set(sortFid, i, $(item));
+        });
     };
 
+    /**
+     * get rows box
+     * param rowsBox {object} optional, return this.rowsBox if null
+     * return {object}
+     */
+    this.getRowsBox = function (rowsBox) {
+        return rowsBox || this.rowsBox;
+    };
 
-    //=== 最後呼叫 ===
+    //call last
     this.init();
 
     /*
@@ -5089,36 +4823,33 @@ function EditMany(kid, formId, tplRowId, sortFid) {
     */
 
 } //class
-
 /**
- * 注意:
- *   保留的自訂函數: 
- *     void ufAfterLoadJson(rowJson)
- *     error ufWhenSave():
- *     void ufAfterSave(): 在 _crud.js呼叫
+ * single edit form, called by _crud.js
+ * json row for both EditOne/EditMany has fields:
+ *   _rows {json array}: updated rows include upload files
+ *   _deletes {strings}: deleted key strings, seperate with ','
+ *   _childs {json array}: child json array
  * 
- */
-
-/**
- * 單筆維護, 包含以下保留欄位:
- *   _edit:
- *   _childs:
- * called by _crud.js
+ * custom function called by _crud.js
+ *   void fnAfterLoadJson(json)
+ *   error fnWhenSave()
+ *   void fnAfterSave()
+ *   
  * param kid {string} (optional 'Id') key field id
- * param formId {string} (optional 'eform')
+ * param eformId {string} (optional 'eform')
  * return {EditOne}
  */ 
-function EditOne(kid, formId) {
+function EditOne(kid, eformId) {
 
-    //constant 
-    //this.DataOld = '_old';      //    //舊資料存在 data 屬性, 內容必須與 _editMany.DataOld 相同
-
+    /**
+     * initial
+     */
     this.init = function () {
         this.kid = kid || 'Id';
-        this.form = $('#' + (formId || 'eform'));     //multiple rows container object
+        this.eform = $('#' + (eformId || 'eform'));     //multiple rows container object
 
-        _edit.setFidTypeVars(this, this.form);
-        _edit.setFileVars(this, this.form);
+        _edit.setFidTypeVars(this, this.eform);
+        _edit.setFileVars(this, this.eform);
     };
 
     /**
@@ -5126,7 +4857,7 @@ function EditOne(kid, formId) {
      * return {bool}
      */
     this.getKey = function () {
-        return _input.get(this.kid, this.form);
+        return _input.get(this.kid, this.eform);
     };
 
     /**
@@ -5137,13 +4868,17 @@ function EditOne(kid, formId) {
         return _str.isEmpty(this.getKey());
     };
 
+    /**
+     * load row into UI, also save into old variables
+     * param row {json}
+     */
     this.loadRow = function (row) {
-        _form.loadRow(this.form, row);
+        _form.loadRow(this.eform, row);
 
         //set old value for each field
         for (var i = 0; i < this.fidTypeLen; i = i + 2) {
             fid = this.fidTypes[i];
-            var obj = _obj.get(fid, this.form);
+            var obj = _obj.get(fid, this.eform);
             obj.data(_edit.DataOld, row[fid]);
         }
     };
@@ -5153,25 +4888,28 @@ function EditOne(kid, formId) {
      * return {json} different column only
      */
     this.getUpdRow = function () {
-        return _edit.getUpdRow(this.kid, this.fidTypes, this.form);
+        return _edit.getUpdRow(this.kid, this.fidTypes, this.eform);
     };
 
+    /**
+     * reset UI and edited variables
+     */
     this.reset = function () {
-        _form.reset(this.form);
+        _form.reset(this.eform);
     };
 
     /**
      * set form to editable or not
-     * status {bool} editable or not
+     * param status {bool} editable or not
      */
     this.setEdit = function (status) {
-        _form.setEdit(this.form, status);
+        _form.setEdit(this.eform, status);
     };
 
     /**
      * formData add files
-     * param {string} levelStr
-     * param {FormData} data
+     * param levelStr {string}
+     * param data {FormData}
      * return {json} file json
      */
     this.dataAddFiles = function (levelStr, data) {
@@ -5182,7 +4920,7 @@ function EditOne(kid, formId) {
         for (var i = 0; i < this.fileLen; i++) {
             var fid = this.fileFids[i];
             var serverFid = _edit.getServerFid(levelStr, fid);
-            if (_ifile.dataAddFile(data, fid, serverFid, this.form)) {
+            if (_ifile.dataAddFile(data, fid, serverFid, this.eform)) {
                 fileJson[serverFid] = this.getKey();
             }
         }
@@ -5190,22 +4928,967 @@ function EditOne(kid, formId) {
         return fileJson;
     };
 
-    //=== file event start ===
-    //file field be triggered
-    this.onFile = function (me) {        
+    //call last
+    this.init();
+
+}//class
+/**
+ * workflow component
+ * param boxId {string} edit canvas id
+ * param mNode {EditMany}
+ * param mLine {EditMany}
+ * return {Flow}
+ */ 
+function Flow(boxId, mNode, mLine) {
+
+    /**
+     * initial flow
+     */ 
+    this.init = function () {
+        //#region constant
+        //node types
+        this.StartNode = 'S';
+        this.EndNode = 'E';
+        this.NormalNode = 'N';
+        this.AutoNode = 'A';
+
+        //and/or seperator for line condition
+        //js only replace first found, so use regular, value is same to code.type=AndOr
+        this.OrSep = '{O}';  
+        this.AndSep = '{A}';
+        this.ColSep = ',';
+
+        //html filter/class
+        this.NodeFilter = '.xf-node';   //for find node object
+        this.MenuFilter = '.xf-menu';   //menu for node/line property
+        this.EpFilter = '.xf-ep';       //node end point
+        this.StartNodeCls = 'xf-start-node';    //start node class
+        this.EndNodeCls = 'xf-end-node';        //end node class
+        this.AutoNodeCls = 'xf-auto-node';      //auto node class
+
+        //connection(line) style: start, agree, disagree
+        this.InitLineCfg = { stroke: 'blue', strokeWidth: 2 };  //initial
+        this.OkLineCfg = { stroke: 'green', strokeWidth: 2 };   //ok
+        this.DenyLineCfg = { stroke: 'red', strokeWidth: 2 };   //deny(reject)
+
+        //start node config
+        this.StartNodeCfg = {
+            filter: this.EpFilter,
+            //anchor: 'Continuous',
+            anchor: ['Bottom', 'Left', 'Right'],
+            //outlineWidth not work !!
+            connectorStyle: {
+                stroke: '#5c96bc',
+                strokeWidth: 2,
+                outlineStroke: 'transparent',
+                outlineWidth: 3,
+            },
+            connectionType: 'basic',
+            extract: {
+                'action': 'the-action'
+            },
+            maxConnections: 10,
+            /*
+            onMaxConnections: function (info, e) {
+                alert('Maximum connections (' + info.maxConnections + ') reached');
+            }
+            */
+        };
+
+        //end node config
+        this.EndNodeCfg = {
+            dropOptions: { hoverClass: 'dragHover' },
+            //anchor: 'Continuous',
+            anchor: ['Top', 'Bottom', 'Left', 'Right'],
+            allowLoopback: true,
+        };
+        //#endregion
+
+        //#region variables
+        //editMany
+        this.mNode = mNode;
+        this.mLine = mLine;
+
+        //this.popupMenu = $('.xf-menu');
+        this.divFlowBox = $('#' + boxId);
+        this.divLinesBox = $('#divLinesBox');       //hidden
+        this.divLineConds = $('#divLineConds');     //div line conds inside modalLineProp
+        this.eformNode = $('#eformNode');           //node edit form
+        this.eformLine = $('#eformLine');           //line edit form
+        this.modalNodeProp = $('#modalNodeProp');
+        this.modalLineProp = $('#modalLineProp');
+
+        //node/line template        
+        this.tplNode = $('#tplNode').html();
+        this.tplLine = $('#tplLine').html();
+        this.tplLineCond = $('#tplLineCond').html();
+
+        //now selected type & element
+        this.nowIsNode = false;     //true:node, false:line
+        this.nowElm = null;         //node element or connection(line)
+        //#endregion
+
+        //this.condOpExprs/this.condOpShows
+        //for show line label
+        var condOpMaps = [
+            this.OrSep, ') || (',  //or
+            this.AndSep, ' && ',    //and
+            ',eq,', '=',
+            ',neq,', '!=',
+            ',gt,', '>',
+            ',ge,', '>=',
+            ',st,', '<',
+            ',se,', '<=',
+        ];
+        this.condOpExprs = [];   //condition op regular expression
+        this.condOpShows = [];   //condition op show text
+        var j = 0;
+        for (var i = 0; i < condOpMaps.length; i = i + 2) {
+            this.condOpExprs[j] = new RegExp(condOpMaps[i], 'g');
+            this.condOpShows[j] = condOpMaps[i + 1];
+            j++;
+        }
+
+        //get jsplumb instance
+        var plumb = jsPlumb.getInstance({
+            Container: boxId,
+            //Connector: 'StateMachine',
+            Connector: 'Flowchart',            
+            Endpoint: ['Dot', { radius: 2 }],
+            HoverPaintStyle: { stroke: '#1e8151', strokeWidth: 3 },
+            ConnectionOverlays: [
+                ['Arrow', {
+                    location: 1,
+                    id: 'arrow',
+                    width: 8,
+                    length: 10,
+                    foldback: 0.8,
+                }],
+                ['Label', {
+                    label: '',
+                    id: 'label',
+                    cssClass: 'xf-line-label',
+                }]
+            ],
+        });
+
+        //set one basic connection style 
+        plumb.registerConnectionType('basic', {
+            anchor: 'Continuous',
+            connector: 'Flowchart',
+            //connector: 'StateMachine',            
+        });
+
+        //set instance first
+        this.plumb = plumb;
+
+        //set event
+        this.setFlowEvent();
+
+        /*
+        //set LineProp event
+        //LineType radio
+        this.modalLineProp.find('[name=LineType]').change(function () {
+            this.onChangeLineType(this.value);
+        });
+        */
+
+        //return plumb;
     };
 
-    this.onOpenFile = function (me) {
+    /**
+     * set flow events:
+     *   1.line right click to show context menu
+     *   2.mouse down to hide context menu
+     */
+    this.setFlowEvent = function () {
+        var plumb = this.plumb;
+        var me = this;
+
+        // bind a click listener to each connection; the connection is deleted. you could of course
+        // just do this: jsPlumb.bind('click', jsPlumb.detach), but I wanted to make it clear what was
+        // happening.
+        //(定義)Notification a Connection was clicked.
+        /*
+        plumb.bind('click', function (c) {
+            //this.showModalNode();
+            this.modalNodeProp.modal('show');
+        });
+        */
+
+        //line(connection) show context menu
+        plumb.bind('contextmenu', function (elm, event) {
+            //"this" not work here !!
+            me.showPopupMenu(elm, event, false);
+        });
+
+        //event: before build connection
+        //info: connection        
+        //plumb.bind('connection', function (info) {
+        plumb.bind('beforeDrop', function (info) {
+            //if (this.loading)
+            //    return true;
+
+            //if connection existed, return false for stop 
+            //info.source did not work here !!
+            var conn = info.connection;
+            if (plumb.getConnections({ source: conn.source, target: conn.target }).length > 0)
+                return false;
+
+            //get source node & type
+            //var sourceType = me.elmToNodeRow(conn.source).NodeType;
+            //var lineType = this.isSourceCondMode(sourceType) ? this.LineTypeCond : this.LineTypeYes;
+            var prop = me.getLineProp('');
+
+            //set conn style & label
+            conn.setPaintStyle(prop.style);    //real connection
+            me.setLineLabel(conn, prop.label);
+
+            //add parameters(line model) into connection
+            //debugger;
+            var row = {
+                StartNode: me.elmToNodeValue(conn.source, 'Id'),
+                EndNode: me.elmToNodeValue(conn.target, 'Id'),
+                //LineType: lineType,
+                CondStr: '',
+                Sort: 9,
+            };
+            me.setLineKey(conn, me.addLine(row));
+            //this.connSetParas(conn, line, true);
+
+            //alert('connect');
+            return true;
+        });
+
+        /*
+        // click listener for the enable/disable link in the source box (the blue one).
+        plumb.on(this.NodeFilter, 'contextmenu', function (ev) {
+            //this.nowIsNode = true;
+            //this.nowElm = ev.target;
+            this.wf._showPopupMenu('.xf-menu', ev);
+        */
+
+        /*
+        // bind a double click listener to 'boxEl'; add new node when this occurs.
+        jsPlumb.on(this.boxEl, 'dblclick', function (e) {
+            this.newNode(e.offsetX, e.offsetY);
+        });
+        */
+
+        //hide context menu (jsPlumb no mousedown event !!)
+        $(document).bind('mousedown', function (e) {
+            //if (_obj.isShow(me.popupMenu))
+            //    me.popupMenu.hide(100);
+            
+            //"this" is not work here !!
+            var filter = me.MenuFilter;
+            if (!$(e.target).parents(filter).length > 0)
+                $(filter).hide(100);
+            
+        });
     };
 
-    this.onViewFile = function (me) {
+    /**
+     * set node event & source/target property
+     * param nodeObj {object} node object
+     */ 
+    this.setNodeEvent = function (nodeObj) {
+        //set source & target property
+        var nodeType = _itext.get('NodeType', nodeObj);
+        var plumb = this.plumb;
+        var me = this;
+
+        //event: move node (update x,y)
+        //initialise draggable elements.
+        //must put before makeSource/makeTarget !!
+        var nodeElm = nodeObj[0];
+        plumb.draggable(nodeElm, {
+            grid: [10, 10],
+            //update node position
+            stop: function (params) {
+                //debugger;
+                //var node = $(params.el);
+                var pos = $(params.el).position();
+                _form.loadRow(nodeObj, { PosX: pos.left, PosY: pos.top });
+                //this.mNode.setRow(node.data(_fun.Fid), { PosX: pos.left, PosY: pos.top });
+            },
+        });
+
+        //build line(connection)
+        //must put after plumb.draggable() !!
+        if (nodeType != this.EndNode)
+            plumb.makeSource(nodeElm, this.StartNodeCfg);
+        if (nodeType != this.StartNode)
+            plumb.makeTarget(nodeElm, this.EndNodeCfg);
+
+        //event: show node menu
+        //this.setNodeEvent(nodeObj);
+        nodeObj.on('contextmenu', function (event) {
+            //"this" is not work here !!
+            me.showPopupMenu(event.target, event, true);
+        });
+
+        //產生節點, remark it: 似乎無作用 !!
+        // this is not part of the core demo functionality; it is a means for the Toolkit edition's wrapped
+        // version of this demo to find out about new nodes being added.
+        //plumb.fire('jsPlumbDemoNodeAdded', nodeElm);
     };
 
-    this.onDeleteFile = function (me) {
-    };
-    //=== file event end ===
+    /*
+    //load nodes & lines(at initial)
+    this.loadJson = function (json) {
+        //set flag
+        //this.loading = true;
 
-    //最後呼叫
+        //set instance
+
+        //stop drawing
+        jsPlumb.setSuspendDrawing(true);
+ 
+        //load nodes & lines
+        this.loadNodes(_crud.getChildRows(json, 0));
+        this.loadLines(_crud.getChildRows(json, 1));
+
+        //start drawing
+        jsPlumb.setSuspendDrawing(false, true);
+        //this.loading = false;
+    };
+    */
+
+    /**
+     * load nodes into UI
+     * param rows {jsons} node rows
+     */
+    this.loadNodes = function (json) {
+        //stop drawing
+        jsPlumb.setSuspendDrawing(true);
+
+        //empty all nodes first
+        var box = this.divFlowBox;
+        box.find(this.NodeFilter).remove();
+
+        //set nodes class
+        var rows = _crud.getJsonRows(json);
+        for (var i = 0; i < rows.length; i++)
+            this.setNodeClass(rows[i]);
+
+        //3rd param reset=false, coz box has other objects, cannot reset
+        this.mNode.loadRows(box, rows, false);
+
+        //set nodes event
+        var me = this;
+        box.find(this.NodeFilter).each(function () {
+            me.setNodeEvent($(this));
+        });
+
+        //start drawing
+        jsPlumb.setSuspendDrawing(false, true);
+    };
+
+    /**
+     * load nodes into UI(hide)
+     * param rows {jsons} line rows
+     */
+    this.loadLines = function (json) {
+        //stop drawing
+        jsPlumb.setSuspendDrawing(true);
+
+        //empty jsplumb lines
+        var conns = this.plumb.getAllConnections();   //for in did not work !!
+        for (var i = 0; i < conns.length; i++)
+            this.plumb.deleteConnection(conns[i]);
+
+        //render jsplumb line
+        var rows = _crud.getJsonRows(json);
+        for (var i = 0; i < rows.length; i++)
+            this.renderLine(rows[i]);
+
+        //load editMany lines
+        this.mLine.loadRows(this.divLinesBox, rows);
+
+        //start drawing
+        jsPlumb.setSuspendDrawing(false, true);
+    };
+
+    //#region node function
+    /**
+     * set node class(_NodeClass), template has this field
+     * param row {json} node row
+     * return {json} new row
+     */ 
+    this.setNodeClass = function (row) {
+        switch (row.NodeType) {
+            case this.StartNode:
+                row._NodeClass = this.StartNodeCls;
+                break;
+            case this.EndNode:
+                row._NodeClass = this.EndNodeCls;
+                break;
+            case this.AutoNode:
+                row._NodeClass = this.AutoNodeCls;
+                break;
+            default:
+                //normal node
+                break;
+        }
+
+        return row;
+    };
+
+    //add new node
+    this.addNode = function (name, nodeType) {
+        //json row initial value
+        var row = {
+            Name: name,
+            NodeType: nodeType,
+            PosX: 100,
+            PosY: 100,
+        };
+
+        var node = this.mNode.addRow(this.divFlowBox, this.setNodeClass(row));
+        this.setNodeEvent(node);   //set node event
+    };
+
+    /**
+     * node id to node object
+     */ 
+    this.idToNode = function (id) {
+        return this.divFlowBox.find('.xf-node [value=' + id + ']').closest('.xf-node');
+    };
+    /**
+     * inside element to node object
+     */ 
+    this.elmToNode = function (elm) {
+        return $(elm).closest(this.NodeFilter);
+    };
+    /*
+    //get node row (by node object)
+    this.getNodeRow = function (obj) {
+        return this.mNode.getRow(obj);
+    };
+    //get node row by inside element
+    this.elmToNodeRow = function (elm) {
+        var node = this.elmToNode(elm);
+        return this.mNode.getRow(node);
+    };
+    */
+    this.elmToNodeValue = function (elm, fid) {
+        var node = this.elmToNode(elm);
+        return this.boxGetValue(node, fid);
+    };
+    /*
+    this.getNodeIdByElm = function (elm) {
+        var node = this.elmToNode(elm);
+        return _obj.get('Id', node);
+    };
+    */
+
+    /**
+     * node get field value
+     * param node {object} node object
+     * param fid {string} field id
+     * return {string}
+     */ 
+    this.boxGetValue = function (node, fid) {
+        return _itext.get(fid, node);
+    };
+
+    /**
+     * node get field values
+     * param node {object} node object
+     * param fids {strings} field id array
+     * return {json}
+     */ 
+    this.boxGetValues = function (node, fids) {
+        var json = {};
+        for (var i = 0; i < fids.length; i++) {
+            var fid = fids[i];
+            json[fid] = _itext.get(fid, node);
+        }
+        return json;
+    };
+
+    this.deleteNode = function (nodeElm) {
+        //delete from & to lines
+        var plumb = this.plumb;
+        this.deleteLines(plumb.getConnections({ source: nodeElm }));
+        this.deleteLines(plumb.getConnections({ target: nodeElm }));
+
+        //add deleted row of node
+        var node = $(nodeElm);
+        this.mNode.deleteRow(this.getObjKey(node));
+
+        //delete node 
+        $(nodeElm).remove();
+    };
+    //#endregion (node function)
+
+    //#region line function
+    /**
+     * add one line(connector)
+     * param row {json} line row
+     * return void
+     */ 
+    this.renderLine = function (row) {
+
+        //param 2(reference object) not work here !!
+        var prop = this.getLineProp(row.CondStr);    //get line style & label
+        var conn = this.plumb.connect({
+            //type: 'basic',
+            source: this.idToNode(row.StartNode),
+            target: this.idToNode(row.EndNode),
+            paintStyle: prop.style,
+            //anchors: ["Right", "Left"],
+        });
+
+        //add custom attributes: whole line model(big camel), only this way workable !!
+        //this.connSetParas(conn, row, isNew); 
+        this.setLineKey(conn, row.Id);
+
+        //set label
+        this.setLineLabel(conn, prop.label);
+    };
+
+
+    /**
+     * add flow line into hide UI for crud
+     * param row {json}
+     * return {string} line key
+     */
+    this.addLine = function (row) {
+        var newLine = $(this.tplLine);      //create row object, no need mustache()
+        _form.loadRow(newLine, row);        //row objec to UI
+        var key = this.mLine.boxSetNewId(newLine);   //set new key
+        this.divLinesBox.append(newLine);   //append row object
+        return key;
+    };
+
+    /**
+     * set connection key
+     */ 
+    this.setLineKey = function (conn, key) {
+        var row = {};
+        row['Id'] = key;
+        conn.setParameters(row);
+    };
+
+    /*
+    //save line model into connection object
+    this.connSetParas = function (conn, line, isNew) {
+        var lineId = isNew ? this.getNewLineId() : line.Id;
+        this.mLine.keyValuesToModel(isNew, lineId, line);
+        //keep old value
+        //line._LineType = line.LineType;
+        line._CondStr = line.CondStr; //_CondStr for log changed
+        line._Sort = line.Sort;
+        conn.setParameters(line);
+    };
+
+    //return string
+    this.getNewLineId = function () {
+        this.maxLineNo++;
+        return this.maxLineNo + '';
+    };
+    */
+
+    //is line source node a condition mode(true) or yes/no type(false)
+    this.isSourceCondMode = function (sourceType) {
+        return (sourceType == this.StartNode || sourceType == this.AutoNode);
+    };
+
+    /*
+    this.isLineCondMode = function (lineType) {
+        return (lineType === '2');
+    };
+
+    //is node type editable or not
+    this.isNodeTypeEditable = function (nodeType) {
+        return (nodeType === this.NormalNode || nodeType === this.AutoNode);
+    };
+    */
+
+    /**
+     * get line property: style, label
+     * return {json} 
+     */ 
+    this.getLineProp = function (condStr) {
+        return {
+            //type: type,
+            style: this.InitLineCfg,
+            label: this.condStrToLabel(condStr),
+        }
+    };
+
+    this.getLineElmKey = function (conn) {
+        return conn.getParameters()['Id'];
+    };
+
+    /**
+     * get object(node/line) key
+     * param obj {object}
+     * return {string} key value
+     */
+    this.getObjKey = function (obj) {
+        return _itext.get('Id', obj);
+    };
+
+    //set connection label
+    this.setLineLabel = function (conn, label) {
+        var obj = conn.getOverlay('label');
+        obj.setVisible(!_str.isEmpty(label));
+        obj.setLabel(label);
+        //conn.getOverlay('label').setLabel(label);
+    };
+
+    //delete line with warning msg
+    this.deleteLineWithMsg = function (conn) {
+        _tool.ans('delete this line ?', function () {
+            this.deleteLine(conn);
+        });
+    };
+    //delete line without warning msg
+    this.deleteLine = function (conn) {
+        //add deleted row
+        var json = conn.getParameters();    //model
+        this.mLine.deleteRow(json.Id);
+
+        //delete conn
+        this.plumb.deleteConnection(conn);
+    };
+    this.deleteLines = function (conns) {
+        for (var i = 0; i < conns.length; i++) {
+            this.deleteLine(conns[i]);
+        }
+    };
+    //#endregion (line function)
+
+    /**
+     * show popup menu for node(normal, auto)/line
+     * param elm {element} node element or connection
+     * param event {event}
+     * param isNode {bool} true(node), false(line)
+     */
+    this.showPopupMenu = function (elm, event, isNode) {
+        //stop default context menu 
+        event.preventDefault();
+
+        //set instance variables
+        this.nowIsNode = isNode;
+        this.nowElm = isNode ? $(elm).closest(this.NodeFilter)[0] : elm;
+
+        //set edit status
+        var canEdit = true;
+        var nodeType;
+        if (isNode) {
+            nodeType = this.elmToNodeValue(elm, 'NodeType');
+            canEdit = (nodeType == this.NormalNode || nodeType == this.AutoNode);
+        } else {
+            nodeType = this.elmToNodeValue(elm.source, 'NodeType');
+            canEdit = (nodeType == this.StartNode || nodeType == this.AutoNode);
+        }
+        /*
+        //debugger;
+        var item = this.popupMenu.find('.xd-edit');
+        if (canEdit)
+            item.show();
+        else
+            item.hide();
+        */
+
+        // Show contextmenu
+        $(this.MenuFilter).finish()
+        //this.popupMenu.finish()
+            .toggle(100)
+            .css({
+                top: event.pageY + 'px',
+                left: event.pageX + 'px'
+            });
+    };
+
+    //convert condiction string to label string
+    this.condStrToLabel = function (str) {
+        if (_str.isEmpty(str))
+            return '';
+
+        var hasOr = str.indexOf(this.OrSep) > 0;
+        for (var i = 0; i < this.condOpExprs.length; i++)
+            str = str.replace(this.condOpExprs[i], this.condOpShows[i]);
+        if (hasOr)
+            str = '(' + str + ')';
+        return str;
+    };
+
+    //convert condStr to List<Cond>
+    this.condStrToList = function (str) {
+        if (_str.isEmpty(str))
+            return null;
+
+        var list = [];
+        var k = 0;
+        var orList = str.split(this.OrSep);
+        var orLen = orList.length;
+        var hasOr = (orLen > 1);
+        for (var i = 0; i < orLen; i++) {
+            var andList = orList[i].split(this.AndSep);
+            for (var j = 0; j < andList.length; j++) {
+                var cols = andList[j].split(this.ColSep);
+                list[k] = {
+                    //AndOr: hasOr ? 'O' : 'A',
+                    AndOr: hasOr ? this.OrSep : this.AndSep,
+                    Fid: cols[0],
+                    Op: cols[1],
+                    Value: cols[2],
+                };
+                k++;
+            }
+        }
+        return list;
+    };
+
+    //get line condition string
+    this.getCondStr = function () {
+        var me = this;
+        var condStr = '';
+        this.divLineConds.find('tr').each(function (idx) {
+            var tr = $(this);
+            var str = (idx == 0 ? '' : _iselect.get('AndOr', tr)) +
+                _itext.get('Fid', tr) + me.ColSep +
+                _iselect.get('Op', tr) + me.ColSep +
+                _itext.get('Value', tr);
+            condStr += str;
+        });
+        return condStr;
+    };
+
+    this.showModalNode = function (nodeType) {
+        var node = this.elmToNode(this.nowElm);
+        var row = this.boxGetValues(node, ['NodeType', 'Name', 'SignerType', 'SignerValue']);
+        _form.loadRow(this.modalNodeProp, row);
+        /*
+        //set NodeType field
+        var obj = _obj.get('NodeType', form);
+        _iselect.setO(obj, nodeType);
+        _iselect.setEditO(obj, this.isNodeTypeEditable(nodeType));
+        */
+
+        //show modal
+        _modal.showO(this.modalNodeProp);   //.modal('show');
+    };
+
+    //conn: line connection
+    this.showModalLine = function (conn) {
+        //debugger;
+        var form = this.eformLine;  //line prop modal edit form
+        //var line = conn.getParameters();   //line model
+        var line = this.connToLine(conn);
+        //var lineType = line.LineType;
+
+        //show fields
+        //_iradio.set('LineType', lineType, form);
+        //this.onChangeLineType(lineType); //switch input
+        _iread.set('StartNode', this.elmToNodeValue(conn.source, 'Name'), form);
+        _iread.set('EndNode', this.elmToNodeValue(conn.target, 'Name'), form);
+        _itext.set('Sort', this.boxGetValue(line, 'Sort'), form);
+
+        //show modal
+        _modal.showO(this.modalLineProp);
+
+        //if (!this.isLineCondMode(lineType))
+        //    line.CondStr = '';
+
+        //load line conditions rows
+        this.divLineConds.empty();
+        var condList = this.condStrToList(this.boxGetValue(line, 'CondStr'));
+        if (condList != null) {
+            for (var i = 0; i < condList.length; i++) {
+                var newCond = $(this.tplLineCond);
+                _form.loadRow(newCond, condList[i]);
+                this.divLineConds.append(newCond);
+            }
+        }
+    };
+
+    //jsplumb connection to line object
+    this.connToLine = function (conn) {
+        return this.idToLine(this.getLineElmKey(conn));
+    };
+
+    //id to line object
+    this.idToLine = function (id) {
+        return this.divLinesBox.find('.xd-line [value=' + id + ']').closest('.xd-line');
+    };
+
+    /*
+    //line prop show cond(true) or agree(false)
+    this.linePropShowCond = function (show) {
+        var win = this.modalLineProp;
+        if (show) {
+            win.find('.xu-cond').show();    //show condition input
+            win.find('.xu-agree').hide();   //show agree radio
+        } else {
+            win.find('.xu-cond').hide();
+            win.find('.xu-agree').show();
+        }
+    };
+    */
+
+    //#region events
+    //on add start node
+    this.onAddStartNode = function () {
+        //this.renderLine(this.row0);
+        //return;
+
+        //check, only one start node allow
+        //debugger;
+        if (this.divFlowBox.find('.' + this.StartNodeCls).length > 0) {
+        //if (_json.findIndex(this.mNode.getRows(), 'NodeType', 'S') >= 0) {
+            //_tool.msg(this.R.StartNodeExist);
+            _tool.msg('Start Node Already Existed !');
+            return;
+        }
+
+        //add node
+        this.addNode('Start', this.StartNode);
+    };
+    //on add end node
+    this.onAddEndNode = function () {
+        this.addNode('E', this.EndNode);
+    };
+    this.onAddAutoNode = function () {
+        this.addNode('Auto', this.AutoNode);
+    };
+    //on add normal node
+    this.onAddNormalNode = function () {
+        this.addNode('Node', this.NormalNode);
+    };
+
+    /*
+    this.deleteNode = function (elm) {
+        //delete lines first
+
+        //delete node
+    };
+
+    this.deleteLine = function (elm) {
+        var tr = $(btn).closest('tr');
+    };
+    */
+
+    //context menu event
+    this.onMenuEdit = function () {
+        if (this.nowIsNode)
+            this.showModalNode(this.elmToNodeValue(this.nowElm, 'NodeType'));
+        else
+            this.showModalLine(this.nowElm);
+    };
+
+    this.onMenuDelete = function () {
+        var me = this;
+        if (me.nowIsNode) {
+            _tool.ans('delete this node ?', function () {
+                me.deleteNode(me.nowElm);
+            });
+        } else {
+            _tool.ans('delete this line ?', function () {
+                me.deleteLine(me.nowElm);
+            });
+        }
+    };
+
+    //onclick add line condition
+    this.onAddLineCond = function () {
+        var row = {
+            AndOr: this.AndSep,
+            Op: 'eq',
+        };
+        var cond = $(Mustache.render(this.tplLineCond, row));
+        _form.loadRow(cond, row);        //row objec to UI
+        this.divLineConds.append(cond);
+    };
+
+    this.onDeleteLineCond = function (btn) {
+        $(btn).closest('tr').remove();
+    };
+
+    //node prop onclick ok
+    this.onModalNodeOk = function () {
+        //check input
+
+        //hide modal
+        _modal.hideO(this.modalNodeProp);
+
+        //set new value
+        var row = _form.toJson(this.eformNode);
+        //this.mNode.setRow(nodeObj.data(_fun.Fid), row);
+
+        //update node display name
+        var nodeObj = $(this.nowElm);
+        nodeObj.find('.xd-name').text(row.Name);
+
+        //update node form fields
+        _itext.set('Name', row.Name, nodeObj);
+        _itext.set('SignerType', row.SignerType, nodeObj);
+        _itext.set('SignerValue', row.SignerValue, nodeObj);
+
+        //change node style, has xf-ep div at the end !!
+        //var html = row.Name + '<div class="xf-ep" action="begin"></div>';
+        //nodeObj.html(html);
+
+        /*
+        //reset auto node class
+        if (row.NodeType == this.AutoNode)
+            nodeObj.addClass(this.AutoNodeCls);
+        else
+            nodeObj.removeClass(this.AutoNodeCls);
+        */
+    };
+
+    //line prop click ok
+    this.onModalLineOk = function () {
+        //check input
+
+        //hide modal
+        _modal.hideO(this.modalLineProp);
+
+        //var lineType = _iradio.get('LineType', this.eformLine);
+        //_assert.inArray(lineType, ['0','1','2']);
+
+        //conds to string
+        var condStr = this.getCondStr();
+
+        //set new value
+        //write into line, this.nowElm is line connection
+        //var form = this.eformLine;
+        var conn = this.nowElm;
+        //conn.setParameter('LineType', lineType);
+        var row = {
+            CondStr: condStr,
+            Sort: _itext.get('Sort', this.eformLine),
+        };
+        //conn.setParameter('CondStr', condStr);
+        //conn.setParameter('Sort', _itext.get('Sort', form));
+        //var line = conn.getParameters();    //model
+        var line = this.connToLine(conn);
+        _form.loadRow(line, row);
+        //this.mLine.setRow(line[_fun.Fid], row);
+
+        //change line label
+        var prop = this.getLineProp(condStr)
+        this.setLineLabel(conn, prop.label);
+        conn.setPaintStyle(prop.style);
+    };
+
+    /*
+    this.onChangeLineType = function (lineType) {
+        if (lineType === '2')
+            _form.hideShow(null, [this.divLineCondBox]);
+        else
+            _form.hideShow([this.divLineCondBox]);
+    };
+    */
+    //#endregion (events)
+
+    //call last
     this.init();
 
 }//class

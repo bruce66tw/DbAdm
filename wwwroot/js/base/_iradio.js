@@ -107,7 +107,6 @@ var _iradio = $.extend({}, _ibase, {
      @param {string} extProp (optional) extProp
      @return {string} html string.
     */
-    //render: function (isId, id, label, checked, editable, value, onClickFn) {
     render: function (fid, label, checked, value, editable, extClass, extProp) {
         var html = "" +
             "<label class='xg-radio {0}'>" +

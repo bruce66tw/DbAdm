@@ -44,8 +44,11 @@ var _form = {
         return JSON.stringify(_form.toJson(form));
     },
 
-    //read json into form (container object)
-    //form: form or div object
+    /**
+     * load json row into form UI (container object)
+     * param form {object} form or box object
+     * param row {json}
+     */
     loadRow: function (form, row) {
         for (var key in row)
             _input.set(key, row[key], form);
@@ -74,7 +77,7 @@ var _form = {
         //get ids
         //var ids = [];
         var ok = true;
-        form.find('.' + _fun.xdRequired).each(function () {
+        form.find('.' + _fun.XdRequired).each(function () {
             var me = $(this);
             if (_str.isEmpty(_input.getO(me))) {
                 ok = false;
@@ -305,25 +308,6 @@ var _form = {
                 });
             }
         }
-    },
-
-    //切換頁面為 xg-active
-    //div: jquery object
-    swap: function (div) {
-        //debugger;
-        var active = $('.xg-swap.xg-active');
-        if (div === active)
-            return;
-
-        //效果處理
-        active.fadeOut(200, function () {
-            //debugger;
-            active.removeClass('xg-active');
-
-            div.addClass('xg-active');
-            div.fadeIn(500);
-        });
-        //e.preventDefault();
     },
 
     zz_reset: function (form) {

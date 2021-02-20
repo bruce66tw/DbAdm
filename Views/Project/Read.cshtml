@@ -8,7 +8,7 @@
 @await Component.InvokeAsync("XgProgPath", new string[] { "專案維護" } )
 <div class="xp-prog">
     <!-- read form-->
-    <div id="divRead" class="xg-swap xg-active">
+    <div id="divRead">
         <div class='xg-btns-box'>
             @await Component.InvokeAsync("XgCreate")
         </div>
@@ -27,7 +27,7 @@
     </div>
 
     <!-- edit form -->
-    <div id="divEdit" class="xg-swap">
+    <div id="divEdit" class="xg-hide">
         <partial name="Edit" />
     </div>
 </div>

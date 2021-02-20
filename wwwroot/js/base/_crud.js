@@ -1,4 +1,9 @@
-﻿var _crud = {
+﻿/**
+ * note:
+ *   1.reserved function:
+ *     a.fnAfterSwap(readMode): called after _crud.swap()
+ */
+var _crud = {
 
     //constant
     Rows: '_rows',
@@ -72,15 +77,15 @@
      * param hasDelete {bool} has delete icon or not
      * param hasView {bool} has view icon or not
      */
-    dtCrudFun: function (key, rowName, hasUpdate, hasDelete, hasView) {
+    dtCrudFun: function (key, rowName, hasUpdate, hasDelete, hasView,
+        fnOnUpdate, fnOnDelete, fnOnView) {
         var funs = '';
         if (hasUpdate)
-            funs += _str.format('<button type="button" class="btn btn-link" onclick="_crud.onUpdate(\'{0}\')"><i class="ico-pen" title="{1}"></i></button>', key, _BR.TipUpdate);
+            funs += _str.format('<button type="button" class="btn btn-link" onclick="{0}(\'{1}\')"><i class="ico-pen" title="{2}"></i></button>', ((fnOnUpdate == null) ? '_crud.onUpdate' : fnOnUpdate), key, _BR.TipUpdate);
         if (hasDelete)
-            funs += _str.format('<button type="button" class="btn btn-link" onclick="_crud.onDelete(\'{0}\',\'{1}\')"><i class="ico-delete" title="{2}"></i></button>', key, rowName, _BR.TipDelete);
+            funs += _str.format('<button type="button" class="btn btn-link" onclick="_crud.onDelete(\'{1}\',\'{2}\')"><i class="ico-delete" title="{3}"></i></button>', ((fnOnDelete == null) ? '_crud.onDelete' : fnOnDelete), key, rowName, _BR.TipDelete);
         if (hasView)
-            funs += _str.format('<button type="button" class="btn btn-link" onclick="_crud.onView(\'{0}\')"><i class="ico-eye" title="{1}"></i></button>', key, _BR.TipView);
-
+            funs += _str.format('<button type="button" class="btn btn-link" onclick="_crud.onView(\'{1}\')"><i class="ico-eye" title="{2}"></i></button>', ((fnOnView == null) ? '_crud.onView' : fnOnView), key, _BR.TipView);
         return funs;
     },
     //=== jQuery datatables end ===    
@@ -139,11 +144,11 @@
 
     //initial forms(recursive)
     initForm: function (edit) {
-        if (edit.form == null)
+        if (edit.eform == null)
             return;
 
-        _idate.init('', edit.form);  //init 日期欄位(所有欄位)
-        _valid.init(edit.form);
+        _idate.init('', edit.eform);  //init 日期欄位(所有欄位)
+        _valid.init(edit.eform);
         var childLen = _crud.getEditChildLen(edit);
         for (var i = 0; i < childLen; i++)
             _crud.initForm(_crud.getEditChild(edit, i));
@@ -152,24 +157,8 @@
     /**
      * get master edit form
      */
-    getForm0: function () {
-        return _me.edit0.form;
-    },
-
-    //=== event start ===
-    /**
-     * 展開查詢畫面的額外欄位
-     */ 
-    onFind2: function () {
-        //$('.xg-find-form').slideToggle();
-        var find2 = _me.rform2;
-        if (find2 == null)
-            return;
-        else if (_obj.isShow(find2))
-            _form.hideShow([find2]);
-        else
-            _form.hideShow(null, [find2]);
-
+    getEform0: function () {
+        return _me.edit0.eform;
     },
 
     /**
@@ -184,11 +173,48 @@
     },
 
     /**
+     * change newDiv to active
+     * param newDiv {object} jquery object
+     */ 
+    swap: function (toRead) {
+        var oldDiv, newDiv;
+        if (toRead) {
+            oldDiv = _me.divEdit;
+            newDiv = _me.divRead;
+        } else {
+            oldDiv = _me.divRead;
+            newDiv = _me.divEdit;
+        }
+
+        if (_obj.isShow(oldDiv)) {
+            oldDiv.fadeToggle(200);
+            newDiv.fadeToggle(500);
+        }
+        _crud._afterSwap(toRead);
+    },
+
+    //=== event start ===
+    /**
      * onclick find rows
      */
     onFind: function () {
         var cond = _crud.getFindCond();
         _me.dt.find(cond);
+    },
+
+    /**
+     * expand find2 form
+     */
+    onFind2: function () {
+        //$('.xg-find-form').slideToggle();
+        var find2 = _me.rform2;
+        if (find2 == null)
+            return;
+        else if (_obj.isShow(find2))
+            _form.hideShow([find2]);
+        else
+            _form.hideShow(null, [find2]);
+
     },
 
     /**
@@ -210,11 +236,11 @@
      * onclick Create button
      */
     onCreate: function () {
-        _me.key = '';
-        _crud.setEditStatus(_fun.FunC);
-        _prog.setPathCreate();
+        var fun = _fun.FunC;
+        _prog.setPath(fun);
+        _crud.setEditStatus(fun);
         _crud.resetForm(_me.edit0);
-        _form.swap(_me.divEdit);
+        _crud.swap(false);        
     },
 
     /**
@@ -233,7 +259,7 @@
         _crud.getJsonAndSetMode(key, _fun.FunV);
     },
 
-    getJsonAndSetMode: function (key, fun) {
+    getJsonAndSetMode: function (key, funType) {
         if (_str.isEmpty(key)) {
             _log.error('error: key is empty !');
             return;
@@ -241,37 +267,14 @@
 
         //_crud.toUpdateMode(key);
         _ajax.getJson('GetJson', { key: key }, function (data) {
-            //_me.nowRow = data;
-            _crud.loadJson(data);
-
             //to edit(U/V) mode
-            _me.key = key;
-            _prog.setPathUpdate();
-            _crud.setEditStatus(fun);
-            _form.swap(_me.divEdit);
-
-            /*
-            //trigger custom function if any
-            if ($.isFunction(_me._ueOnUpdate)){
-                _me._ueOnUpdate(data);
-            }
-            */
+            //_me.key = key;
+            _prog.setPath(funType);
+            _crud.setEditStatus(funType);
+            _crud.swap(false);
+            _crud.loadJson(data);
         });
     },
-
-    /**
-     * to edit(U/V) mode
-     */
-    /*
-    setModeAndShow: function (mode, key) {
-        _me.key = key;
-        _crud.setEditStatus(mode);
-        //_me.isNew = false;
-        //_me.divReadTool.hide();
-        _prog.setPathUpdate();
-        _form.swap(_me.divEdit);
-    },
-    */
 
     //set edit form status
     //fun: C,U,V
@@ -307,7 +310,7 @@
 
     /**
      * load row(include childs) into UI
-     * will call ufAfterLoadJson() 
+     * will call fnAfterLoadJson() 
      */
     loadJson: function (json) {
         //load master(single) row
@@ -322,9 +325,9 @@
             edit2.loadJson(_crud.getChildJson(json, i));
         }
 
-        //call ufAfterLoadJson() if existed
-        if (_fun.notNull(edit.ufAfterLoadJson))
-            edit.ufAfterLoadJson(json);
+        //call fnAfterLoadJson() if existed
+        if (_fun.notNull(edit.fnAfterLoadJson))
+            edit.fnAfterLoadJson(json);
     },
 
     /**
@@ -351,7 +354,7 @@
     */
 
     /**
-     * has upload file or not
+     * check has upload file or not
      */
     hasFile: function () {
         var edit = _me.edit0;
@@ -379,7 +382,7 @@
         var edit0 = _me.edit0;
         var row = edit0.getUpdRow();
         var key = edit0.getKey();
-        var isNew = edit0.isNewRow();
+        //var isNew = edit0.isNewRow();
 
         //file for master edit
         var fileJson = {};
@@ -396,11 +399,11 @@
 
             //file
             if (edit2.hasFile) {
-                var fileJson2 = edit2.dataAddFiles(levelStr + i, formData); //upload files
+                var fileJson2 = edit2.dataAddFiles(levelStr + i, formData, edit2.rowsBox); //upload files
                 _json.copy(fileJson2, fileJson);
             }
 
-            var childJson = edit2.getUpdJson(key);
+            var childJson = edit2.getUpdJsonByCrud(key);
             if (childJson == null)
                 continue;
 
@@ -433,19 +436,6 @@
         return data;
     },
 
-    /*
-    //get updated json(has _rows, _childs, _deletes) for EditMany.js
-    //only read first level child, not recursive
-    getChildUpdJson: function (upKey, levelStr, formData, edit) {
-
-        //file
-        if (edit.hasFile)
-            edit.dataAddFiles(levelStr, formData); //upload files
-
-        return edit.getUpdJson(upKey);
-    },
-    */
-
     //傳入edit
     getEditChildLen: function (edit) {
         var fid = _crud.Childs;
@@ -465,10 +455,10 @@
 
     //get child json
     getChildJson: function (upJson, childIdx) {
-        var fid = _crud.Childs;
-        return (upJson[fid] == null || upJson[fid].length <= childIdx)
+        var childs = _crud.Childs;
+        return (upJson[childs] == null || upJson[childs].length <= childIdx)
             ? null
-            : upJson[fid][childIdx];
+            : upJson[childs][childIdx];
     },
 
     //get child json rows
@@ -478,8 +468,11 @@
     },
 
     /**
-     * 設定 child rows
-     * return child object
+     * set child rows
+     * param upRow {json}
+     * param childIdx {int}
+     * param rows {jsons}
+     * return {json} child object
      */ 
     setChildRows: function (upRow, childIdx, rows) {
         var fid = _crud.Childs;
@@ -500,7 +493,7 @@
      */ 
     validAll: function () {
         var edit = _me.edit0;
-        if (!edit.form.valid())
+        if (!edit.eform.valid())
             return false;
 
         var childLen = _crud.getEditChildLen(edit);
@@ -537,46 +530,6 @@
     */
 
     /**
-     * get saving row, 只讀取master table跟第一層child table
-     * formData {FormData} (optional) 有上傳檔案時必須在外面宣告此變數, 再傳入
-     * return {json}
-     */
-    /*
-    getSaveJson: function (formData) {
-        //var isNew = (_str.isEmpty(_me.key));
-        var edit = _me.edit0;
-        var isNew = edit.isNewRow();
-        var row = isNew ? edit.getRow() : edit.getUpdRow();   //saving row
-        //var deletes = [];
-        //var formData = new FormData();  //for upload files if need   
-        var childs = [];
-        var childLen = _crud.getEditChildLen(edit);
-        var hasChild = false;
-        for (var i = 0; i < childLen; i++) {
-            //updated rows & files
-            var edit2 = _crud.getEditChild(edit, i);
-            if (edit2.hasFile)
-                edit2.dataAddFiles(formData); //加入上傳檔案(多個)
-
-            var child = {
-                _rows: edit2.getUpdRows(),
-                _deletes: edit2.getDeletedRows(),
-            };
-            if (child._rows != null || child._deletes != null) {
-                hasChild = true;
-                childs[i] = child;
-            }
-        }
-        if (hasChild) {
-            if (row == null)
-                row = {};
-            row._childs = childs;
-        }
-        return row;
-    },
-    */
-
-    /**
      * on click save, 有上傳檔案時, 後端參數名稱固定為T(n)+FieldName
      * 傳送到後端的資料包含以下欄位:  
      *   key, row(包含_childs, _deletes, _fileNo), files
@@ -588,10 +541,10 @@
             return;
         }
 
-        //call ufWhenSave if existed
+        //call fnWhenSave if existed
         var edit0 = _me.edit0;
-        if (_fun.notNull(edit0.ufWhenSave)) {
-            var error = edit0.ufWhenSave();
+        if (_fun.notNull(edit0.fnWhenSave)) {
+            var error = edit0.fnWhenSave();
             if (error != '') {
                 _tool.msg(error);
                 return;
@@ -601,13 +554,12 @@
         //debugger;
         //get saving row
         var formData = new FormData();  //for upload files if need
-        var fileJson = {};
-        var row = _crud.getUpdJson(formData, fileJson);
+        var row = _crud.getUpdJson(formData);
 
         //temp add
         //return;
 
-        //save, 固定呼叫 Save action
+        //save rows, call backend Save action
         var isNew = edit0.isNewRow();
         var action = isNew ? 'Create' : 'Update';
         var data = null;
@@ -680,9 +632,9 @@
      */
     afterSave: function (data) {
         //debugger;
-        //call ufWhenSave if need
-        if (_fun.notNull(_me.edit0.ufAfterSave))
-            _me.edit0.ufAfterSave();
+        //call fnAfterSave if need
+        if (_fun.notNull(_me.edit0.fnAfterSave))
+            _me.edit0.fnAfterSave();
 
         //save no rows
         if (data.Value === '0') {
@@ -705,7 +657,7 @@
      * param fid {string} fid
      */
     onCheckAll: function (me, box, fid) {
-        _icheck.setF(_fun.getDataFid(fid) + ':not(:disabled)', _icheck.checkedO($(me)), box);
+        _icheck.setF(_fun.getFidFilter(fid) + ':not(:disabled)', _icheck.checkedO($(me)), box);
     },
 
     /**
@@ -764,25 +716,9 @@
     //=== event end ===
 
     /**
-     * ??
-     * key array to string(加上table & row分隔符號, two dimension)
-     * keys {string[]} key list
-     * return {string} 字串加上table & row分隔符號
-     */
-    /*
-    _keysToStr: function (keys) {
-        var strs = [];
-        for (var i = 0; i < keys.length; i++) {
-            strs[i] = (keys[i].length === 0)
-                ? ''
-                : keys[i].join(_fun.RowSep);
-        }
-        return strs.join(_fun.TableSep);
-    },
-    */
-
-    //=== set mode start ===
-    //reset form(recursive)
+     * reset form (recursive)
+     * param edit {EditOne}
+     */ 
     resetForm: function (edit) {
         //reset this
         edit.reset();
@@ -791,51 +727,22 @@
         var childLen = _crud.getEditChildLen(edit);
         for (var i = 0; i < childLen; i++) {
             var edit2 = _crud.getEditChild(edit, i);
-            edit2.loadJson();
+            edit2.reset();
         }
     },
 
     /**
-     * 回到新增模式
-     */
-    /*
-    toCreateMode: function () {
-        //_me.isNew = true;
-        _me.key = '';
-        _crud.setEditStatus(_fun.FunC);
-        //_me.divReadTool.hide();
-        _prog.setPathCreate();
-        _crud.resetForm(_me.edit0);
-        _form.swap(_me.divEdit);
-    },
-    */
-
-    /**
-     * 回到修改模式
-     * key {string} row key
-     */
-    /*
-    toUpdateMode: function (key) {
-        _crud.setModeAndShow(_fun.FunU, key);
-    },
-    */
-
-    /**
-     * to view mode
-     */
-    /*
-    toViewMode: function (key) {
-        _crud.setModeAndShow(_fun.FunV, key);
-    },
-    */
-
-    /**
-     * 回到列表模式
+     * back to list form
      */
     toReadMode: function () {
         //_me.divReadTool.show();
         _prog.resetPath();
-        _form.swap(_me.divRead);
+        _crud.swap(true);
+    },
+
+    _afterSwap: function (toRead) {
+        if (_me.fnAfterSwap !== undefined)
+            _me.fnAfterSwap(toRead);
     },
 
     /**
@@ -844,7 +751,5 @@
     isEditMode: function () {
         return (_me.nowFun !== _fun.FunV);
     },
-
-    //=== set mode end ===    
 
 };//class
